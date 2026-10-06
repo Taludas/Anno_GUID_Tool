@@ -27,11 +27,12 @@ EXE_BASE_NAME = "Anno_GUID_Tool"
 #: Used only if the file exists.
 ICON_FILE = ROOT / "AnnoGUIDTool.ico"
 
-#: Project packages. They are imported via main.py -> app.py and found by the
+#: Project modules. They are imported via main.py -> app.py and found by the
 #: import scanner, but are listed explicitly to be safe.
 HIDDEN_IMPORTS = (
     "core.config_manager", "core.constants", "core.guid_database",
-    "core.translations", "core.version", "core.xml_scanner",
+    "core.translations", "core.update_checker", "core.version", "core.xml_scanner",
+    "dialogs.update_dialog",
     "tabs.database_tab", "tabs.replace_tab", "tabs.settings_tab",
 )
 
@@ -75,7 +76,7 @@ def main() -> int:
         "--onefile",
         "--windowed",
         "--name", name,
-        # Project root on the search path so "app", "core" and "tabs" resolve.
+        # Project root on the search path so "app", "core", "tabs" and "dialogs" resolve.
         "--paths", str(ROOT),
         # version.txt is unpacked into the bundle and read from there at runtime.
         "--add-data", f"{ROOT / 'version.txt'};.",

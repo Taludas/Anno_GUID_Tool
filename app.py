@@ -8,6 +8,8 @@ Responsibilities
 ----------------
 * Load the user settings (:class:`AppConfig`) once and ONE GUID database
   (:class:`GuidDatabase`) PER GAME (Anno 117, Anno 1800).
+* Show a GitHub button (top right) that opens the project page and,
+  left of it, a "Ko-Fi Sponsor" button that opens the author's Ko-fi page.
 * Show a game selector above the tabs. The selected game decides
     - which database the "GUID Database" tab shows / imports into,
     - which own / dummy GUID range the "Replace Dummy GUIDs" tab uses.
@@ -16,6 +18,8 @@ Responsibilities
     2. "Replace Dummy GUIDs" -> :class:`ReplaceTab`
     3. "Settings"            -> :class:`SettingsTab`
 * Provide translation (:meth:`tr`) and live language switching.
+* Check GitHub for a newer version at startup (background thread) and
+  show :class:`UpdateDialog` if one is available.
 
 Tabs communicate with each other only through this object, e.g.
 ``app.database_tab.register_path(...)`` or ``app.replace_tab.on_ranges_changed()``.
@@ -26,6 +30,8 @@ Shortcuts used by the tabs
 ``app.db``   -> :class:`GuidDatabase` of the active game
 """
 
+import queue
+import webbrowser
 from tkinter import messagebox
 
 import customtkinter as ctk
@@ -34,9 +40,11 @@ from core.config_manager import AppConfig
 from core.constants import APP_AUTHOR, APP_NAME, GAMES
 from core.guid_database import GuidDatabase, migrate_legacy_database
 from core.translations import TRANSLATIONS
+from core.update_checker import GITHUB_REPO_URL, KOFI_URL, check_for_update_async
 from core.version import read_version
 from tabs.database_tab import DatabaseTab
 from tabs.replace_tab import ReplaceTab
+from dialogs.update_dialog import UpdateDialog
 from tabs.settings_tab import SettingsTab
 
 # Internal tab identifiers. CTkTabview uses the tab *name* as key, so fixed
@@ -87,6 +95,26 @@ class GUIDManagerApp(ctk.CTk):
         self.seg_game.set(GAMES[self.settings.active_game]["name"])
         self.seg_game.pack(side="left")
 
+        # GitHub button (top right): opens the project page in the default
+        # browser. Dark GitHub-style colors in both appearance modes.
+        self.btn_github = ctk.CTkButton(
+            game_bar, text="GitHub", width=90,
+            fg_color=("#24292f", "#333a42"), hover_color=("#3d444d", "#4a525c"),
+            text_color="white", font=ctk.CTkFont(weight="bold"),
+            command=lambda: webbrowser.open(GITHUB_REPO_URL),
+        )
+        self.btn_github.pack(side="right")
+
+        # Ko-fi button, left of the GitHub button (packed after it with
+        # side="right", so it appears to its left). Ko-fi brand red.
+        self.btn_kofi = ctk.CTkButton(
+            game_bar, text="Ko-Fi Sponsor", width=120,
+            fg_color="#FF5E5B", hover_color="#E04845",
+            text_color="white", font=ctk.CTkFont(weight="bold"),
+            command=lambda: webbrowser.open(KOFI_URL),
+        )
+        self.btn_kofi.pack(side="right", padx=(0, 8))
+
         # --- Tab view -------------------------------------------------
         self.tabview = ctk.CTkTabview(self)
         self.tabview.pack(padx=20, pady=(10, 20), fill="both", expand=True)
@@ -110,6 +138,35 @@ class GUIDManagerApp(ctk.CTk):
                 self.tr("msg_migrated_title"),
                 self.tr("msg_migrated_body").format(GAMES["anno1800"]["db_file"]),
             ))
+
+        # Look for a newer version on GitHub (non-blocking).
+        self._start_update_check()
+
+    # ------------------------------------------------------------------
+    # Update check
+    # ------------------------------------------------------------------
+    def _start_update_check(self):
+        """Start the GitHub update check and poll for its result.
+
+        Tkinter must only be used from the UI thread. The background thread
+        therefore only puts the remote version into a queue; the UI thread
+        polls the queue with ``after()`` and opens the popup itself.
+        Polling stops after ~15 s (request timeout is 5 s), so no timer keeps
+        running if there is no answer.
+        """
+        self._update_queue = queue.Queue()
+        check_for_update_async(self.version, self._update_queue.put)
+        self.after(500, self._poll_update_result, 30)
+
+    def _poll_update_result(self, remaining):
+        """Show the update popup as soon as the background check reports a newer version."""
+        try:
+            remote_version = self._update_queue.get_nowait()
+        except queue.Empty:
+            if remaining > 0:
+                self.after(500, self._poll_update_result, remaining - 1)
+            return
+        UpdateDialog(self, self.version, remote_version)
 
     # ------------------------------------------------------------------
     # Active game

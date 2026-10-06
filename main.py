@@ -22,15 +22,17 @@ core/translations.py     – all UI texts (German / English)
 core/config_manager.py   – config.ini handling, per-game GUID range lists (GameProfile)
 core/guid_database.py    – per-game JSON database, free GUID allocation, legacy migration
 core/xml_scanner.py      – reading / rewriting XML files in folders and ZIPs
+core/update_checker.py   – compares the own version with version.txt on GitHub
 tabs/database_tab.py     – tab "GUID Database"
 tabs/replace_tab.py      – tab "Replace Dummy GUIDs"
 tabs/settings_tab.py     – tab "Settings" (sub tabs General / Anno 117 / Anno 1800)
+dialogs/update_dialog.py – popup "new version available" with link to GitHub
 """
 
 import os
 import sys
 
-# Make "core" and "tabs" importable regardless of the directory the script
+# Make "core", "tabs" and "dialogs" importable regardless of the directory the script
 # is started from (e.g. double-click, IDE run configuration).
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 

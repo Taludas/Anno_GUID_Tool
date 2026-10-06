@@ -87,7 +87,10 @@ TRANSLATIONS = {
         "msg_ranges_saved_title": "GUID Ranges gespeichert",
         "msg_ranges_saved_body": "{}\n\nEigene GUID Ranges:\n{}\n\nDummy GUID Ranges:\n{}",
         "msg_err_range_empty": "{}: Mindestens eine Range muss angegeben werden!",
-        "msg_err_range_internal_overlap": "{}: Die Ranges {} und {} überschneiden sich!"
+        "msg_err_range_internal_overlap": "{}: Die Ranges {} und {} überschneiden sich!",
+        "update_title": "Update verfügbar",
+        "update_heading": "Eine neue Version ist verfügbar!",
+        "update_body": "Installierte Version: {}\nNeue Version auf GitHub: {}\n\nDownload:"
     },
     "en": {
         "tab_db": "GUID Database",
@@ -157,6 +160,9 @@ TRANSLATIONS = {
         "msg_ranges_saved_title": "GUID Ranges Saved",
         "msg_ranges_saved_body": "{}\n\nOwn GUID ranges:\n{}\n\nDummy GUID ranges:\n{}",
         "msg_err_range_empty": "{}: At least one range must be defined!",
-        "msg_err_range_internal_overlap": "{}: The ranges {} and {} overlap!"
+        "msg_err_range_internal_overlap": "{}: The ranges {} and {} overlap!",
+        "update_title": "Update Available",
+        "update_heading": "A new version is available!",
+        "update_body": "Installed version: {}\nNew version on GitHub: {}\n\nDownload:"
     }
 }

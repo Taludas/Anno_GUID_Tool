@@ -1,5 +1,5 @@
 # Changelog
 
-## 0.3.5-beta
+## 0.4.0-beta
 
-### Initial Release
+### update check on startup
