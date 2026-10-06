@@ -4,13 +4,27 @@ guid_database.py
 
 Persistent store of all GUIDs that are already used by the user's mods.
 
-The database is a simple JSON file (see ``DB_FILE``) mapping each GUID
-(as string) to the list of mod-relative XML files it was found in::
+Every supported game (see ``GAMES`` in constants.py) has its OWN database
+file, e.g. ``guid_database_anno1800.json`` and ``guid_database_anno117.json``.
+One :class:`GuidDatabase` instance is created per game.
+
+The database is a JSON file mapping each GUID (as string) to an entry with
+the mod-relative XML files it was found in and an optional comment::
 
     {
-        "1337471142": ["data/config/export/main/asset/assets.xml"],
-        "1337471143": ["data/config/gui/texts_*.xml"]
+        "2144009900": {
+            "comment": "Praefectus Specialists Name",
+            "locations": ["data/config/gui/texts_*.xml"]
+        },
+        "1337471142": {
+            "comment": "",
+            "locations": ["data/config/export/main/asset/assets.xml"]
+        }
     }
+
+Older database files stored only the location list per GUID
+(``"1337471142": ["assets.xml"]``). They are converted to the new format
+automatically when loaded and written in the new format on the next save.
 
 It serves two purposes:
 
@@ -21,8 +35,9 @@ It serves two purposes:
 
 import json
 import os
+import shutil
 
-from core.constants import DB_FILE
+from core.constants import GAMES, LEGACY_DB_FILE
 
 
 def guid_sort_key(guid):
@@ -34,12 +49,32 @@ def guid_sort_key(guid):
     return (0, int(guid), "") if guid.isdigit() else (1, 0, guid)
 
 
+def _new_entry(locations=None, comment=""):
+    """Create a database entry dict in the current format."""
+    return {"comment": comment or "", "locations": list(locations or [])}
+
+
+def _normalize_entry(value):
+    """Convert an entry read from JSON into the current dict format.
+
+    * old format: ``["a.xml", "b.xml"]``            -> ``{"comment": "", "locations": [...]}``
+    * new format: ``{"comment": ..., "locations": ...}`` -> missing keys are added
+    * anything else (corrupt data)                   -> empty entry
+    """
+    if isinstance(value, list):
+        return _new_entry(value)
+    if isinstance(value, dict):
+        return _new_entry(value.get("locations", []), value.get("comment", ""))
+    return _new_entry()
+
+
 class GuidDatabase:
     """Wrapper around the JSON GUID database with convenience methods."""
 
-    def __init__(self, path=DB_FILE):
+    def __init__(self, path):
+        """:param path: JSON file of one game (e.g. ``guid_database_anno1800.json``)."""
         self.path = path
-        #: dict[str, list[str]] – GUID -> list of file locations
+        #: dict[str, dict] – GUID -> {"comment": str, "locations": list[str]}
         self.entries = self._load()
 
     # ------------------------------------------------------------------
@@ -55,12 +90,13 @@ class GuidDatabase:
     # Persistence
     # ------------------------------------------------------------------
     def _load(self):
-        """Load the JSON file. Returns an empty dict if missing or unreadable."""
+        """Load the JSON file (any format version). Returns {} if missing or unreadable."""
         if not os.path.exists(self.path):
             return {}
         try:
             with open(self.path, "r", encoding="utf-8") as f:
-                return json.load(f)
+                raw = json.load(f)
+            return {str(guid): _normalize_entry(value) for guid, value in raw.items()}
         except Exception as e:
             print(f"Error loading GUID database: {e}")
             return {}
@@ -76,17 +112,59 @@ class GuidDatabase:
     def add_location(self, guid, location):
         """Register ``guid`` as used in ``location``.
 
-        * New GUID       -> created with ``[location]``; returns True.
+        * New GUID       -> created with ``[location]`` and empty comment; returns True.
         * Existing GUID  -> ``location`` appended if not yet listed; returns False.
 
         The return value lets callers count how many *new* GUIDs were added.
         """
         if guid not in self.entries:
-            self.entries[guid] = [location]
+            self.entries[guid] = _new_entry([location])
             return True
-        if location not in self.entries[guid]:
-            self.entries[guid].append(location)
+        locations = self.entries[guid]["locations"]
+        if location not in locations:
+            locations.append(location)
         return False
+
+    def set_comment(self, guid, comment):
+        """Set the comment of an EXISTING GUID (unknown GUIDs are ignored).
+
+        :returns: True if the stored comment actually changed.
+        """
+        entry = self.entries.get(guid)
+        if entry is None or entry["comment"] == comment:
+            return False
+        entry["comment"] = comment
+        return True
+
+    def move_to(self, guids, target):
+        """Move ``guids`` (with locations and comment) into the database ``target``.
+
+        * GUID not yet in ``target`` -> copied completely.
+        * GUID already in ``target`` -> location lists are merged (no duplicates);
+          the target's comment is kept, the source comment is only used if the
+          target has none. So no information of either database is lost.
+        * Afterwards the GUIDs are removed from THIS database.
+
+        Unknown GUIDs are ignored. Neither database is saved here – the caller
+        must call :meth:`save` on both.
+
+        :returns: tuple ``(moved, merged)`` – number of GUIDs newly created in
+                  ``target`` and number of GUIDs merged into existing entries.
+        """
+        moved = merged = 0
+        for guid in guids:
+            entry = self.entries.pop(guid, None)
+            if entry is None:
+                continue
+            if guid in target.entries:
+                merged += 1
+            else:
+                moved += 1
+            for location in entry["locations"]:
+                target.add_location(guid, location)
+            if entry["comment"] and not target.entries[guid]["comment"]:
+                target.entries[guid]["comment"] = entry["comment"]
+        return moved, merged
 
     def delete(self, guids):
         """Remove all given GUIDs from the database (unknown GUIDs are ignored)."""
@@ -97,31 +175,70 @@ class GuidDatabase:
     # Queries
     # ------------------------------------------------------------------
     def sorted_items(self):
-        """Return ``[(guid, [locations...]), ...]`` sorted by GUID (numeric first)."""
-        return [(g, self.entries[g]) for g in sorted(self.entries, key=guid_sort_key)]
+        """Return ``[(guid, comment, [locations...]), ...]`` sorted by GUID (numeric first)."""
+        return [
+            (g, self.entries[g]["comment"], self.entries[g]["locations"])
+            for g in sorted(self.entries, key=guid_sort_key)
+        ]
 
-    def count_free(self, start, end):
-        """Number of GUIDs in [start, end] that are NOT yet registered.
+    def count_free(self, ranges, from_guid):
+        """Number of unregistered GUIDs inside ``ranges`` that are >= ``from_guid``.
 
-        Computed as "size of range minus used GUIDs inside the range", so it
-        is fast even for huge ranges (no iteration over the range itself).
+        :param ranges:    sorted list of (start, end) tuples (own ranges of a game)
+        :param from_guid: only GUIDs from this value upwards are counted
+
+        Computed per range as "size minus used GUIDs", so it is fast even for
+        huge ranges (no iteration over the ranges themselves).
         """
-        if start > end:
-            return 0
-        used = sum(1 for g in self.entries if g.isdigit() and start <= int(g) <= end)
-        return (end - start + 1) - used
+        used = [int(g) for g in self.entries if g.isdigit()]
+        free = 0
+        for start, end in ranges:
+            start = max(start, from_guid)
+            if start > end:
+                continue
+            free += (end - start + 1) - sum(1 for g in used if start <= g <= end)
+        return free
 
-    def allocate(self, count, start):
-        """Return ``count`` free GUIDs (as strings), ascending from ``start``.
+    def allocate(self, count, ranges, from_guid):
+        """Return ``count`` free GUIDs (as strings), ascending from ``from_guid``.
 
-        GUIDs already present in the database are skipped, so gaps inside the
-        range are filled first. The caller must ensure enough free GUIDs exist
-        (see :meth:`count_free`); this method does not check the range end.
+        The ranges are walked in ascending order; when one range is used up,
+        allocation continues at the start of the next one. GUIDs already in
+        the database are skipped, so gaps are filled first. The caller must
+        ensure enough free GUIDs exist (see :meth:`count_free`).
         """
         result = []
-        current = start
-        while len(result) < count:
-            if str(current) not in self.entries:
-                result.append(str(current))
-            current += 1
+        for start, end in ranges:
+            current = max(start, from_guid)
+            while current <= end and len(result) < count:
+                if str(current) not in self.entries:
+                    result.append(str(current))
+                current += 1
+            if len(result) >= count:
+                break
         return result
+
+
+def migrate_legacy_database(target_game):
+    """Move the old single ``guid_database.json`` into the database of ``target_game``.
+
+    Older versions of the tool only knew ONE database. On the first start of
+    the multi-game version this file is copied to the database file of
+    ``target_game`` (Anno 1800 by default) and the old file is renamed to
+    ``guid_database.json.bak`` so the migration runs only once.
+
+    Nothing happens if there is no legacy file or if the target database
+    already exists (an existing database is never overwritten).
+
+    :returns: True if a migration was performed, otherwise False.
+    """
+    target = GAMES[target_game]["db_file"]
+    if not os.path.exists(LEGACY_DB_FILE) or os.path.exists(target):
+        return False
+    try:
+        shutil.copy2(LEGACY_DB_FILE, target)
+        os.replace(LEGACY_DB_FILE, LEGACY_DB_FILE + ".bak")
+        return True
+    except Exception as e:
+        print(f"Error migrating legacy database: {e}")
+        return False

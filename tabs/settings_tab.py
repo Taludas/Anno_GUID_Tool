@@ -4,23 +4,131 @@ settings_tab.py
 
 Tab "Settings" – user preferences that are persisted in ``config.ini``.
 
-Rows
-----
-0. Appearance mode   (System / Light / Dark)  – applied immediately
-1. Color theme       (blue / green / dark-blue) – needs an app restart
-2. Language          (Deutsch / English)       – applied immediately
-3. Own GUID range    (Start / End / Save)      – real GUIDs to assign/register
-4. Dummy GUID range  (Start / End / Save)      – placeholder GUIDs to replace
+The tab contains its own sub tab view with one sub tab per group:
 
-Both GUID ranges are validated on save: positive integers, start <= end,
-and the two ranges must not overlap.
+* **General**   – appearance mode (applied immediately), color theme
+                  (needs an app restart) and UI language (applied immediately)
+* **Anno 117**  – GUID ranges of Anno 117
+* **Anno 1800** – GUID ranges of Anno 1800
+
+Each game sub tab has two editable range lists:
+
+* **Own GUID Ranges**   – real GUIDs that are assigned and registered
+* **Dummy GUID Ranges** – placeholder GUIDs that get replaced
+
+Every list shows one row per range (Start | End | ✕). The "+" button below
+a list appends an empty row, "✕" removes a row. "Save Ranges" validates and
+stores BOTH lists of that game at once:
+
+* completely empty rows are ignored,
+* each list needs at least one range,
+* start/end must be non-negative integers with start <= end,
+* ranges inside one list must not overlap each other,
+* own ranges and dummy ranges of the SAME game must not overlap
+  (ranges of different games may overlap – every game has its own database).
+
+The ranges of all games can be edited at any time, independent of the game
+currently selected in the game selector.
 """
 
 from tkinter import messagebox
 
 import customtkinter as ctk
 
-from core.config_manager import ranges_overlap
+from core.config_manager import find_overlap, format_ranges
+
+#: Sub tab key of the general settings (game sub tabs use the game name).
+SUBTAB_GENERAL = "settings_general"
+
+
+class _RangeList:
+    """Editable list of GUID ranges: header, one row per range, "+" button.
+
+    Each row is a tuple ``(row_frame, entry_start, entry_end)``.
+    """
+
+    def __init__(self, parent, title_font, on_enter):
+        """
+        :param parent:     frame the list is packed into
+        :param title_font: font of the section title
+        :param on_enter:   callback (no arguments) triggered by Enter in any entry
+        """
+        self.on_enter = on_enter
+        self.rows = []
+
+        self.frame = ctk.CTkFrame(parent, fg_color="transparent")
+        self.frame.pack(fill="x", padx=10, pady=(10, 0))
+
+        self.lbl_title = ctk.CTkLabel(self.frame, text="", font=title_font)
+        self.lbl_title.pack(anchor="w", pady=(0, 4))
+
+        # Column headings "Start" / "End" aligned with the entries below.
+        header = ctk.CTkFrame(self.frame, fg_color="transparent")
+        header.pack(anchor="w", padx=(20, 0))
+        self.lbl_start = ctk.CTkLabel(header, text="", width=140, anchor="w")
+        self.lbl_start.pack(side="left", padx=(0, 10))
+        self.lbl_end = ctk.CTkLabel(header, text="", width=140, anchor="w")
+        self.lbl_end.pack(side="left")
+
+        # Container for the range rows; rows are packed in order.
+        self.rows_frame = ctk.CTkFrame(self.frame, fg_color="transparent")
+        self.rows_frame.pack(anchor="w", padx=(20, 0))
+
+        # "+" appends an empty row.
+        self.btn_add = ctk.CTkButton(self.frame, text="+", width=36, command=self.add_row)
+        self.btn_add.pack(anchor="w", padx=(20, 0), pady=(4, 0))
+
+    def set_texts(self, title, start_text, end_text):
+        """Apply translated texts to title and column headings."""
+        self.lbl_title.configure(text=title)
+        self.lbl_start.configure(text=start_text)
+        self.lbl_end.configure(text=end_text)
+
+    def add_row(self, start="", end=""):
+        """Append a row with two entries and a remove button; focus the start entry."""
+        row_frame = ctk.CTkFrame(self.rows_frame, fg_color="transparent")
+        row_frame.pack(anchor="w", pady=2)
+
+        entry_start = ctk.CTkEntry(row_frame, width=140)
+        entry_start.insert(0, str(start))
+        entry_start.pack(side="left", padx=(0, 10))
+
+        entry_end = ctk.CTkEntry(row_frame, width=140)
+        entry_end.insert(0, str(end))
+        entry_end.pack(side="left", padx=(0, 10))
+
+        row = (row_frame, entry_start, entry_end)
+        btn_remove = ctk.CTkButton(
+            row_frame, text="✕", width=30, fg_color="#d9534f", hover_color="#c9302c",
+            command=lambda: self.remove_row(row),
+        )
+        btn_remove.pack(side="left")
+
+        for entry in (entry_start, entry_end):
+            entry.bind("<Return>", lambda e: self.on_enter())
+
+        self.rows.append(row)
+        if start == "":
+            entry_start.focus_set()
+
+    def remove_row(self, row):
+        """Remove one row from the list (not saved until "Save Ranges")."""
+        row[0].destroy()
+        self.rows.remove(row)
+
+    def set_ranges(self, ranges):
+        """Replace all rows with one row per (start, end) tuple."""
+        for row in list(self.rows):
+            self.remove_row(row)
+        for start, end in ranges:
+            self.add_row(start, end)
+
+    def raw_values(self):
+        """Return ``[(row_number, start_text, end_text), ...]`` (row numbers start at 1)."""
+        return [
+            (i, row[1].get().strip(), row[2].get().strip())
+            for i, row in enumerate(self.rows, start=1)
+        ]
 
 
 class SettingsTab:
@@ -33,16 +141,28 @@ class SettingsTab:
     def __init__(self, app, parent):
         self.app = app
         self.parent = parent
+        #: dict game key -> {"own": _RangeList, "dummy": _RangeList, "save": CTkButton}
+        self.game_widgets = {}
         self._build_ui()
 
     # ==================================================================
     # UI construction
     # ==================================================================
     def _build_ui(self):
-        """Create all setting rows in a two-column grid (label | control)."""
+        """Create the sub tab view: General + one sub tab per game."""
+        self.subtabs = ctk.CTkTabview(self.parent)
+        self.subtabs.pack(padx=10, pady=10, fill="both", expand=True)
+
+        self._build_general(self.subtabs.add(SUBTAB_GENERAL))
+        for key, game in self.app.settings.games.items():
+            # Game names are not translated, so they serve as sub tab keys.
+            self._build_game(self.subtabs.add(game.name), key)
+
+    def _build_general(self, parent):
+        """Sub tab "General": appearance mode, color theme, language."""
         cfg = self.app.settings
-        frame = ctk.CTkFrame(self.parent)
-        frame.pack(padx=20, pady=20, fill="both", expand=True)
+        frame = ctk.CTkFrame(parent)
+        frame.pack(padx=10, pady=10, fill="both", expand=True)
         bold = ctk.CTkFont(size=14, weight="bold")
 
         # Row 0: appearance mode
@@ -72,69 +192,53 @@ class SettingsTab:
         self.combo_lang.set("Deutsch" if cfg.language == "de" else "English")
         self.combo_lang.grid(row=2, column=1, padx=20, pady=10, sticky="w")
 
-        # Row 3: own GUID range
-        (self.lbl_own_range, self.lbl_own_start, self.entry_own_start,
-         self.lbl_own_end, self.entry_own_end, self.btn_save_own) = self._build_range_row(
-            frame, row=3, start=cfg.own_guid_start, end=cfg.own_guid_end,
-            on_save=self.save_own_range,
-        )
+    def _build_game(self, parent, game_key):
+        """Sub tab of one game: own range list, dummy range list, save button.
 
-        # Row 4: dummy GUID range
-        (self.lbl_dummy_range, self.lbl_dummy_start, self.entry_dummy_start,
-         self.lbl_dummy_end, self.entry_dummy_end, self.btn_save_dummy) = self._build_range_row(
-            frame, row=4, start=cfg.dummy_guid_start, end=cfg.dummy_guid_end,
-            on_save=self.save_dummy_range,
-        )
-
-    @staticmethod
-    def _build_range_row(frame, row, start, end, on_save):
-        """Create one "<Title>  Start: [___]  End: [___]  [Save]" row.
-
-        Pressing Enter in either entry triggers ``on_save`` as well.
-        Returns the created widgets so their texts can be translated later:
-        ``(title_label, start_label, start_entry, end_label, end_entry, save_button)``.
+        A scrollable frame is used because the lists can grow with "+".
         """
-        title = ctk.CTkLabel(frame, text="", font=ctk.CTkFont(size=14, weight="bold"))
-        title.grid(row=row, column=0, padx=20, pady=10, sticky="w")
+        game = self.app.settings.games[game_key]
+        frame = ctk.CTkScrollableFrame(parent)
+        frame.pack(padx=10, pady=10, fill="both", expand=True)
+        bold = ctk.CTkFont(size=14, weight="bold")
 
-        inner = ctk.CTkFrame(frame, fg_color="transparent")
-        inner.grid(row=row, column=1, padx=20, pady=10, sticky="w")
+        # "k=game_key" binds the current key (see closures in loops).
+        on_enter = lambda k=game_key: self.save_ranges(k)
 
-        lbl_start = ctk.CTkLabel(inner, text="")
-        lbl_start.pack(side="left", padx=(0, 5))
-        entry_start = ctk.CTkEntry(inner, width=130)
-        entry_start.insert(0, str(start))
-        entry_start.pack(side="left", padx=(0, 15))
+        own = _RangeList(frame, bold, on_enter)
+        own.set_ranges(game.own_ranges)
 
-        lbl_end = ctk.CTkLabel(inner, text="")
-        lbl_end.pack(side="left", padx=(0, 5))
-        entry_end = ctk.CTkEntry(inner, width=130)
-        entry_end.insert(0, str(end))
-        entry_end.pack(side="left", padx=(0, 15))
+        dummy = _RangeList(frame, bold, on_enter)
+        dummy.set_ranges(game.dummy_ranges)
 
-        btn_save = ctk.CTkButton(inner, text="", width=100, command=on_save)
-        btn_save.pack(side="left")
+        btn_save = ctk.CTkButton(
+            frame, text="", fg_color="green", hover_color="darkgreen",
+            command=on_enter,
+        )
+        btn_save.pack(anchor="w", padx=30, pady=20)
 
-        entry_start.bind("<Return>", lambda e: on_save())
-        entry_end.bind("<Return>", lambda e: on_save())
-
-        return title, lbl_start, entry_start, lbl_end, entry_end, btn_save
+        self.game_widgets[game_key] = {"own": own, "dummy": dummy, "save": btn_save}
 
     def update_language(self):
         """Set all texts of this tab according to the active UI language."""
         tr = self.app.tr
+
+        # Rename the "General" sub tab (internal API, see app.update_ui_language).
+        try:
+            buttons = self.subtabs._segmented_button._buttons_dict
+            if SUBTAB_GENERAL in buttons:
+                buttons[SUBTAB_GENERAL].configure(text=tr(SUBTAB_GENERAL))
+        except Exception as e:
+            print(f"Error updating settings sub tab captions: {e}")
+
         self.lbl_mode.configure(text=tr("settings_appearance"))
         self.lbl_theme.configure(text=tr("settings_theme"))
         self.lbl_lang.configure(text=tr("settings_language"))
 
-        self.lbl_own_range.configure(text=tr("settings_guid_range"))
-        self.lbl_dummy_range.configure(text=tr("settings_dummy_range"))
-        for lbl in (self.lbl_own_start, self.lbl_dummy_start):
-            lbl.configure(text=tr("lbl_range_start"))
-        for lbl in (self.lbl_own_end, self.lbl_dummy_end):
-            lbl.configure(text=tr("lbl_range_end"))
-        for btn in (self.btn_save_own, self.btn_save_dummy):
-            btn.configure(text=tr("btn_save_range"))
+        for widgets in self.game_widgets.values():
+            widgets["own"].set_texts(tr("settings_own_ranges"), tr("lbl_range_start"), tr("lbl_range_end"))
+            widgets["dummy"].set_texts(tr("settings_dummy_ranges"), tr("lbl_range_start"), tr("lbl_range_end"))
+            widgets["save"].configure(text=tr("btn_save_ranges"))
 
     # ==================================================================
     # Appearance / Theme / Language
@@ -159,69 +263,78 @@ class SettingsTab:
     # ==================================================================
     # GUID ranges
     # ==================================================================
-    def _parse_range(self, entry_start, entry_end):
-        """Read and validate a (start, end) pair from two entry widgets.
+    def _parse_list(self, range_list, label):
+        """Read and validate all rows of one :class:`_RangeList`.
 
-        Shows an error message and returns None if a value is not a
-        non-negative integer or if start > end.
+        :param label: list name used in error messages (e.g. "Anno 117 – Own GUID Ranges")
+        :returns: sorted list of (start, end) tuples, or None after showing an error.
         """
-        try:
-            start = int(entry_start.get().strip())
-            end = int(entry_end.get().strip())
-            if start < 0 or end < 0:
-                raise ValueError
-        except ValueError:
-            messagebox.showerror("Error", self.app.tr("msg_err_range_num"))
+        tr = self.app.tr
+        ranges = []
+        for row_no, start_text, end_text in range_list.raw_values():
+            if not start_text and not end_text:
+                continue  # completely empty row -> ignored
+            try:
+                start, end = int(start_text), int(end_text)
+                if start < 0 or end < 0:
+                    raise ValueError
+            except ValueError:
+                messagebox.showerror("Error", tr("msg_err_range_num").format(label, row_no))
+                return None
+            if start > end:
+                messagebox.showerror("Error", tr("msg_err_range_order").format(label, row_no))
+                return None
+            ranges.append((start, end))
+
+        if not ranges:
+            messagebox.showerror("Error", tr("msg_err_range_empty").format(label))
             return None
-        if start > end:
-            messagebox.showerror("Error", self.app.tr("msg_err_range_order"))
+
+        overlap = find_overlap(ranges)
+        if overlap:
+            messagebox.showerror("Error", tr("msg_err_range_internal_overlap").format(
+                label, format_ranges([overlap[0]]), format_ranges([overlap[1]])))
             return None
-        return start, end
+        return sorted(ranges)
 
-    def save_own_range(self):
-        """Validate and save the OWN GUID range.
+    def save_ranges(self, game_key):
+        """Validate and save the own AND dummy ranges of ``game_key``.
 
-        Rejected if it overlaps the dummy range. On success the "Replace"
-        tab is notified so it can adjust its start GUID and range display.
+        Nothing is stored if any check fails. On success the rows are
+        rebuilt in sorted order (empty rows disappear). If the edited game is
+        the active one, the Replace tab is notified so it can adjust its
+        start GUID, range display and dummy scan.
         """
-        cfg = self.app.settings
-        parsed = self._parse_range(self.entry_own_start, self.entry_own_end)
-        if parsed is None:
+        tr = self.app.tr
+        game = self.app.settings.games[game_key]
+        widgets = self.game_widgets[game_key]
+
+        own = self._parse_list(widgets["own"], f"{game.name} – {tr('settings_own_ranges')}")
+        if own is None:
             return
-        start, end = parsed
-
-        if ranges_overlap(start, end, cfg.dummy_guid_start, cfg.dummy_guid_end):
-            messagebox.showerror("Error", self.app.tr("msg_err_overlap").format(
-                start, end, cfg.dummy_guid_start, cfg.dummy_guid_end))
-            return
-
-        cfg.own_guid_start, cfg.own_guid_end = start, end
-        cfg.save()
-        self.app.replace_tab.on_own_range_changed()
-
-        messagebox.showinfo(self.app.tr("msg_range_saved_title"),
-                            self.app.tr("msg_range_saved_body").format(start, end))
-
-    def save_dummy_range(self):
-        """Validate and save the DUMMY GUID range.
-
-        Rejected if it overlaps the own range. On success the "Replace" tab
-        is notified so it re-scans the loaded mod with the new range.
-        """
-        cfg = self.app.settings
-        parsed = self._parse_range(self.entry_dummy_start, self.entry_dummy_end)
-        if parsed is None:
-            return
-        start, end = parsed
-
-        if ranges_overlap(start, end, cfg.own_guid_start, cfg.own_guid_end):
-            messagebox.showerror("Error", self.app.tr("msg_err_overlap").format(
-                cfg.own_guid_start, cfg.own_guid_end, start, end))
+        dummy = self._parse_list(widgets["dummy"], f"{game.name} – {tr('settings_dummy_ranges')}")
+        if dummy is None:
             return
 
-        cfg.dummy_guid_start, cfg.dummy_guid_end = start, end
-        cfg.save()
-        self.app.replace_tab.on_dummy_range_changed()
+        overlap = find_overlap(own, dummy)
+        if overlap:
+            messagebox.showerror("Error", tr("msg_err_overlap").format(
+                game.name, format_ranges([overlap[0]]), format_ranges([overlap[1]])))
+            return
 
-        messagebox.showinfo(self.app.tr("msg_dummy_saved_title"),
-                            self.app.tr("msg_dummy_saved_body").format(start, end))
+        game.own_ranges, game.dummy_ranges = own, dummy
+        self.app.settings.save()
+
+        widgets["own"].set_ranges(own)
+        widgets["dummy"].set_ranges(dummy)
+
+        if game_key == self.app.settings.active_game:
+            self.app.replace_tab.on_ranges_changed()
+
+        messagebox.showinfo(
+            tr("msg_ranges_saved_title"),
+            tr("msg_ranges_saved_body").format(
+                game.name, game.own_ranges_text.replace(", ", "\n"),
+                game.dummy_ranges_text.replace(", ", "\n"),
+            ),
+        )

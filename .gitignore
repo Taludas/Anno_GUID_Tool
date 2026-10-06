@@ -1,4 +1,7 @@
 __pycache__/
+dist/
+build/
 
 config.ini
 *copy*
+*.spec

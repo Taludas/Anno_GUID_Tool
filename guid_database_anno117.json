@@ -1,0 +1,396 @@
+{
+    "2144000003": {
+        "comment": "Praefectus Adriana Name",
+        "locations": [
+            "[Specialists] super-specialists [gz2k2]/data/base/config/export/specialists/PraefectusAdriana.xml",
+            "[Specialists] super-specialists [gz2k2]/data/base/config/gui/texts_*.xml",
+            "data/base/config/export/specialists/PraefectusAdriana.xml",
+            "data/base/config/gui/texts_*.xml"
+        ]
+    },
+    "2144000004": {
+        "comment": "Praefectus Adriana Buff",
+        "locations": [
+            "[Specialists] super-specialists [gz2k2]/data/base/config/export/specialists/PraefectusAdriana.xml",
+            "data/base/config/export/specialists/PraefectusAdriana.xml"
+        ]
+    },
+    "2144000007": {
+        "comment": "",
+        "locations": [
+            "[Specialists] super-specialists [gz2k2]/data/base/config/export/specialists/PraefectusAntonius.xml",
+            "data/base/config/export/specialists/PraefectusAntonius.xml"
+        ]
+    },
+    "2144000006": {
+        "comment": "",
+        "locations": [
+            "[Specialists] super-specialists [gz2k2]/data/base/config/export/specialists/PraefectusAntonius.xml",
+            "[Specialists] super-specialists [gz2k2]/data/base/config/gui/texts_*.xml",
+            "data/base/config/export/specialists/PraefectusAntonius.xml",
+            "data/base/config/gui/texts_*.xml"
+        ]
+    },
+    "2144000010": {
+        "comment": "",
+        "locations": [
+            "[Specialists] super-specialists [gz2k2]/data/base/config/export/specialists/PraefectusAurelia.xml",
+            "data/base/config/export/specialists/PraefectusAurelia.xml"
+        ]
+    },
+    "2144000009": {
+        "comment": "",
+        "locations": [
+            "[Specialists] super-specialists [gz2k2]/data/base/config/export/specialists/PraefectusAurelia.xml",
+            "[Specialists] super-specialists [gz2k2]/data/base/config/gui/texts_*.xml",
+            "data/base/config/export/specialists/PraefectusAurelia.xml",
+            "data/base/config/gui/texts_*.xml"
+        ]
+    },
+    "2144000028": {
+        "comment": "",
+        "locations": [
+            "[Specialists] super-specialists [gz2k2]/data/base/config/export/specialists/PraefectusAurora.xml",
+            "data/base/config/export/specialists/PraefectusAurora.xml"
+        ]
+    },
+    "2144000027": {
+        "comment": "",
+        "locations": [
+            "[Specialists] super-specialists [gz2k2]/data/base/config/export/specialists/PraefectusAurora.xml",
+            "[Specialists] super-specialists [gz2k2]/data/base/config/gui/texts_*.xml",
+            "data/base/config/export/specialists/PraefectusAurora.xml",
+            "data/base/config/gui/texts_*.xml"
+        ]
+    },
+    "2144000012": {
+        "comment": "",
+        "locations": [
+            "[Specialists] super-specialists [gz2k2]/data/base/config/export/specialists/PraefectusCaius.xml",
+            "[Specialists] super-specialists [gz2k2]/data/base/config/gui/texts_*.xml",
+            "data/base/config/export/specialists/PraefectusCaius.xml",
+            "data/base/config/gui/texts_*.xml"
+        ]
+    },
+    "2144000013": {
+        "comment": "",
+        "locations": [
+            "[Specialists] super-specialists [gz2k2]/data/base/config/export/specialists/PraefectusCaius.xml",
+            "data/base/config/export/specialists/PraefectusCaius.xml"
+        ]
+    },
+    "2144000015": {
+        "comment": "",
+        "locations": [
+            "[Specialists] super-specialists [gz2k2]/data/base/config/export/specialists/PraefectusJuno.xml",
+            "[Specialists] super-specialists [gz2k2]/data/base/config/gui/texts_*.xml",
+            "data/base/config/export/specialists/PraefectusJuno.xml",
+            "data/base/config/gui/texts_*.xml"
+        ]
+    },
+    "2144000016": {
+        "comment": "",
+        "locations": [
+            "[Specialists] super-specialists [gz2k2]/data/base/config/export/specialists/PraefectusJuno.xml",
+            "data/base/config/export/specialists/PraefectusJuno.xml"
+        ]
+    },
+    "2144000019": {
+        "comment": "",
+        "locations": [
+            "[Specialists] super-specialists [gz2k2]/data/base/config/export/specialists/PraefectusLaetitia.xml",
+            "data/base/config/export/specialists/PraefectusLaetitia.xml"
+        ]
+    },
+    "2144000018": {
+        "comment": "",
+        "locations": [
+            "[Specialists] super-specialists [gz2k2]/data/base/config/export/specialists/PraefectusLaetitia.xml",
+            "[Specialists] super-specialists [gz2k2]/data/base/config/gui/texts_*.xml",
+            "data/base/config/export/specialists/PraefectusLaetitia.xml",
+            "data/base/config/gui/texts_*.xml"
+        ]
+    },
+    "2144000022": {
+        "comment": "",
+        "locations": [
+            "[Specialists] super-specialists [gz2k2]/data/base/config/export/specialists/PraefectusLiberius.xml",
+            "data/base/config/export/specialists/PraefectusLiberius.xml"
+        ]
+    },
+    "2144000021": {
+        "comment": "",
+        "locations": [
+            "[Specialists] super-specialists [gz2k2]/data/base/config/export/specialists/PraefectusLiberius.xml",
+            "[Specialists] super-specialists [gz2k2]/data/base/config/gui/texts_*.xml",
+            "data/base/config/export/specialists/PraefectusLiberius.xml",
+            "data/base/config/gui/texts_*.xml"
+        ]
+    },
+    "2144000025": {
+        "comment": "",
+        "locations": [
+            "[Specialists] super-specialists [gz2k2]/data/base/config/export/specialists/PraefectusLucius.xml",
+            "data/base/config/export/specialists/PraefectusLucius.xml"
+        ]
+    },
+    "2144000024": {
+        "comment": "",
+        "locations": [
+            "[Specialists] super-specialists [gz2k2]/data/base/config/export/specialists/PraefectusLucius.xml",
+            "[Specialists] super-specialists [gz2k2]/data/base/config/gui/texts_*.xml",
+            "data/base/config/export/specialists/PraefectusLucius.xml",
+            "data/base/config/gui/texts_*.xml"
+        ]
+    },
+    "2144000031": {
+        "comment": "",
+        "locations": [
+            "[Specialists] super-specialists [gz2k2]/data/base/config/export/specialists/PraefectusMaximilian.xml",
+            "data/base/config/export/specialists/PraefectusMaximilian.xml"
+        ]
+    },
+    "2144000030": {
+        "comment": "",
+        "locations": [
+            "[Specialists] super-specialists [gz2k2]/data/base/config/export/specialists/PraefectusMaximilian.xml",
+            "[Specialists] super-specialists [gz2k2]/data/base/config/gui/texts_*.xml",
+            "data/base/config/export/specialists/PraefectusMaximilian.xml",
+            "data/base/config/gui/texts_*.xml"
+        ]
+    },
+    "2144000001": {
+        "comment": "Praefectus Specialists Description",
+        "locations": [
+            "[Specialists] super-specialists [gz2k2]/data/base/config/export/specialists.chest_trader.include.xml",
+            "[Specialists] super-specialists [gz2k2]/data/base/config/gui/texts_*.xml",
+            "data/base/config/export/specialists.chest_trader.include.xml",
+            "data/base/config/gui/texts_*.xml"
+        ]
+    },
+    "2144000002": {
+        "comment": "",
+        "locations": [
+            "[Specialists] super-specialists [gz2k2]/data/base/config/export/trigger.keybind.include.xml",
+            "data/base/config/export/trigger.keybind.include.xml"
+        ]
+    },
+    "2144000100": {
+        "comment": "",
+        "locations": [
+            "[Specialists] super-specialists [gz2k2]/data/base/config/export/trigger.unlock_from_start.include.xml",
+            "data/base/config/export/trigger.unlock_from_start.include.xml"
+        ]
+    },
+    "2144000017": {
+        "comment": "",
+        "locations": [
+            "[Specialists] super-specialists [gz2k2]/data/base/config/gui/texts_*.xml",
+            "data/base/config/gui/texts_*.xml"
+        ]
+    },
+    "2144000008": {
+        "comment": "",
+        "locations": [
+            "[Specialists] super-specialists [gz2k2]/data/base/config/gui/texts_*.xml",
+            "data/base/config/gui/texts_*.xml"
+        ]
+    },
+    "2144000011": {
+        "comment": "",
+        "locations": [
+            "[Specialists] super-specialists [gz2k2]/data/base/config/gui/texts_*.xml",
+            "data/base/config/gui/texts_*.xml"
+        ]
+    },
+    "2144000005": {
+        "comment": "Praefectus Adriana Description",
+        "locations": [
+            "[Specialists] super-specialists [gz2k2]/data/base/config/gui/texts_*.xml",
+            "data/base/config/gui/texts_*.xml"
+        ]
+    },
+    "2144000014": {
+        "comment": "",
+        "locations": [
+            "[Specialists] super-specialists [gz2k2]/data/base/config/gui/texts_*.xml",
+            "data/base/config/gui/texts_*.xml"
+        ]
+    },
+    "2144000023": {
+        "comment": "",
+        "locations": [
+            "[Specialists] super-specialists [gz2k2]/data/base/config/gui/texts_*.xml",
+            "data/base/config/gui/texts_*.xml"
+        ]
+    },
+    "2144000020": {
+        "comment": "",
+        "locations": [
+            "[Specialists] super-specialists [gz2k2]/data/base/config/gui/texts_*.xml",
+            "data/base/config/gui/texts_*.xml"
+        ]
+    },
+    "2144000029": {
+        "comment": "",
+        "locations": [
+            "[Specialists] super-specialists [gz2k2]/data/base/config/gui/texts_*.xml",
+            "data/base/config/gui/texts_*.xml"
+        ]
+    },
+    "2144000032": {
+        "comment": "",
+        "locations": [
+            "[Specialists] super-specialists [gz2k2]/data/base/config/gui/texts_*.xml",
+            "data/base/config/gui/texts_*.xml"
+        ]
+    },
+    "2144000026": {
+        "comment": "",
+        "locations": [
+            "[Specialists] super-specialists [gz2k2]/data/base/config/gui/texts_*.xml",
+            "data/base/config/gui/texts_*.xml"
+        ]
+    },
+    "2144000092": {
+        "comment": "",
+        "locations": [
+            "[Gameplay] Custom Research Options [gz2k2]/data/base/config/export/tech.workforce.include.xml",
+            "[Gameplay] Custom Research Options [gz2k2]/data/base/config/gui/texts_*.xml"
+        ]
+    },
+    "2144000094": {
+        "comment": "",
+        "locations": [
+            "[Gameplay] Custom Research Options [gz2k2]/data/base/config/export/tech.workforce.include.xml"
+        ]
+    },
+    "2144000093": {
+        "comment": "",
+        "locations": [
+            "[Gameplay] Custom Research Options [gz2k2]/data/base/config/export/tech.workforce.include.xml",
+            "[Gameplay] Custom Research Options [gz2k2]/data/base/config/gui/texts_*.xml"
+        ]
+    },
+    "2144000090": {
+        "comment": "",
+        "locations": [
+            "[Gameplay] Custom Research Options [gz2k2]/data/base/config/export/technodes.military.include.xml",
+            "[Gameplay] Custom Research Options [gz2k2]/data/base/config/export/test.xml",
+            "[Gameplay] Custom Research Options [gz2k2]/data/base/config/gui/texts_*.xml"
+        ]
+    },
+    "2144000091": {
+        "comment": "",
+        "locations": [
+            "[Gameplay] Custom Research Options [gz2k2]/data/base/config/export/technodes.military.include.xml",
+            "[Gameplay] Custom Research Options [gz2k2]/data/base/config/export/test.xml",
+            "[Gameplay] Custom Research Options [gz2k2]/data/base/config/gui/texts_*.xml"
+        ]
+    },
+    "2144000060": {
+        "comment": "",
+        "locations": [
+            "[Gameplay] Custom Research Options [gz2k2]/data/base/config/export/unlocktrigger.include.xml"
+        ]
+    },
+    "2144000072": {
+        "comment": "",
+        "locations": [
+            "[Gameplay] Custom Devotion System [gz2k2]/data/base/config/export/multi.exaltation.effects.include.xml"
+        ]
+    },
+    "2144000073": {
+        "comment": "",
+        "locations": [
+            "[Gameplay] Custom Devotion System [gz2k2]/data/base/config/export/multi.exaltation.effects.include.xml"
+        ]
+    },
+    "2144000077": {
+        "comment": "",
+        "locations": [
+            "[Gameplay] Custom Devotion System [gz2k2]/data/base/config/export/multi.exaltation.effects.include.xml"
+        ]
+    },
+    "2144000082": {
+        "comment": "",
+        "locations": [
+            "[Gameplay] Custom Devotion System [gz2k2]/data/base/config/export/multi.exaltation.effects.include.xml"
+        ]
+    },
+    "2144000079": {
+        "comment": "",
+        "locations": [
+            "[Gameplay] Custom Devotion System [gz2k2]/data/base/config/export/multi.exaltation.effects.include.xml"
+        ]
+    },
+    "2144000074": {
+        "comment": "",
+        "locations": [
+            "[Gameplay] Custom Devotion System [gz2k2]/data/base/config/export/multi.exaltation.effects.include.xml"
+        ]
+    },
+    "2144000070": {
+        "comment": "",
+        "locations": [
+            "[Gameplay] Custom Devotion System [gz2k2]/data/base/config/export/multi.exaltation.effects.include.xml"
+        ]
+    },
+    "2144000071": {
+        "comment": "",
+        "locations": [
+            "[Gameplay] Custom Devotion System [gz2k2]/data/base/config/export/multi.exaltation.effects.include.xml"
+        ]
+    },
+    "2144000076": {
+        "comment": "",
+        "locations": [
+            "[Gameplay] Custom Devotion System [gz2k2]/data/base/config/export/multi.exaltation.effects.include.xml"
+        ]
+    },
+    "2144000080": {
+        "comment": "",
+        "locations": [
+            "[Gameplay] Custom Devotion System [gz2k2]/data/base/config/export/multi.exaltation.effects.include.xml"
+        ]
+    },
+    "2144000078": {
+        "comment": "",
+        "locations": [
+            "[Gameplay] Custom Devotion System [gz2k2]/data/base/config/export/multi.exaltation.effects.include.xml"
+        ]
+    },
+    "2144000075": {
+        "comment": "",
+        "locations": [
+            "[Gameplay] Custom Devotion System [gz2k2]/data/base/config/export/multi.exaltation.effects.include.xml"
+        ]
+    },
+    "2144000081": {
+        "comment": "",
+        "locations": [
+            "[Gameplay] Custom Devotion System [gz2k2]/data/base/config/export/multi.exaltation.effects.include.xml"
+        ]
+    },
+    "2144000084": {
+        "comment": "",
+        "locations": [
+            "[Gameplay] Custom Devotion System [gz2k2]/data/base/config/export/patron.minerva.include.xml"
+        ]
+    },
+    "2144000083": {
+        "comment": "",
+        "locations": [
+            "[Gameplay] Custom Devotion System [gz2k2]/data/base/config/export/patron.minerva.include.xml"
+        ]
+    },
+    "2144000000": {
+        "comment": "Praefectus Specialists Name",
+        "locations": [
+            "[Specialists] super-specialists [gz2k2]/data/base/config/export/specialists.chest_account.include.xml",
+            "[Specialists] super-specialists [gz2k2]/data/base/config/gui/texts_*.xml",
+            "data/base/config/export/specialists.chest_account.include.xml",
+            "data/base/config/gui/texts_*.xml"
+        ]
+    }
+}

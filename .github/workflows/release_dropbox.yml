@@ -1,0 +1,135 @@
+name: Build and Release (Dropbox Upload)
+
+on:
+  push:
+    tags:
+      - 'db*' # e.g. "db1.23.45" -> build and upload to Dropbox
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      startsWith(github.ref, 'refs/tags/db')
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install Dependencies
+        shell: pwsh
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install customtkinter pyinstaller
+
+      - name: Read Version
+        id: get_version
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+
+          if (-not (Test-Path "version.txt")) {
+              throw "version.txt not found."
+          }
+          # version.txt contains e.g. "v1.23.45"; the leading "v" is removed
+          # for the file name (Anno_GUID_Tool_v1.23.45.exe).
+          $raw = (Get-Content "version.txt" -Raw).Trim()
+          if (-not $raw) {
+              throw "version.txt is empty."
+          }
+          $version = $raw -replace '^[vV]', ''
+
+          "VERSION=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+          Write-Host "Version: $version"
+
+      - name: Build EXE with PyInstaller
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          # Same build as locally: options are maintained only in build_onefile.py.
+          python build_onefile.py --clean
+          if ($LASTEXITCODE -ne 0) {
+              throw "Build failed. Exit code: $LASTEXITCODE"
+          }
+
+          $exePath = "dist\Anno_GUID_Tool_v${{ steps.get_version.outputs.VERSION }}.exe"
+          if (-not (Test-Path $exePath)) {
+              throw "Expected EXE was not created: $exePath"
+          }
+          $exeFile = Get-Item $exePath
+          Write-Host "Build successful: $($exeFile.FullName) ($($exeFile.Length) bytes)"
+
+      - name: Upload to Dropbox
+        shell: pwsh
+        env:
+          DROPBOX_APP_KEY: ${{ secrets.DROPBOX_APP_KEY }}
+          DROPBOX_APP_SECRET: ${{ secrets.DROPBOX_APP_SECRET }}
+          DROPBOX_REFRESH_TOKEN: ${{ secrets.DROPBOX_REFRESH_TOKEN }}
+          VERSION: ${{ steps.get_version.outputs.VERSION }}
+        run: |
+          $ErrorActionPreference = "Stop"
+
+          # Local file -> target path in Dropbox. Only the EXE is uploaded;
+          # config.ini and the GUID databases are user data created by the tool.
+          $exe = "dist\Anno_GUID_Tool_v$env:VERSION.exe"
+          if (-not (Test-Path $exe)) {
+              throw "File not found: $exe"
+          }
+          $uploads = [ordered]@{
+              $exe = "/Anno_GUID_Tool/Anno_GUID_Tool_v$env:VERSION.exe"
+          }
+
+          # 1. Request a fresh access token with the refresh token
+          $tokenResponse = Invoke-RestMethod -Uri "https://api.dropboxapi.com/oauth2/token" `
+              -Method Post `
+              -ContentType "application/x-www-form-urlencoded" `
+              -Body @{
+                  grant_type    = "refresh_token"
+                  refresh_token = $env:DROPBOX_REFRESH_TOKEN
+                  client_id     = $env:DROPBOX_APP_KEY
+                  client_secret = $env:DROPBOX_APP_SECRET
+              }
+
+          $accessToken = $tokenResponse.access_token
+          if ([string]::IsNullOrWhiteSpace($accessToken)) {
+              throw "Could not obtain an access token from Dropbox."
+          }
+
+          # 2. Upload
+          foreach ($file in $uploads.Keys) {
+              $dropboxPath = $uploads[$file]
+              Write-Host "Uploading $file -> $dropboxPath"
+
+              $arg = @{
+                  path       = $dropboxPath
+                  mode       = "overwrite"
+                  autorename = $false
+                  mute       = $false
+              } | ConvertTo-Json -Compress
+
+              # --fail-with-body: HTTP errors from Dropbox (e.g. 401, 409)
+              # result in a non-zero exit code.
+              curl.exe `
+                --fail-with-body `
+                -X POST "https://content.dropboxapi.com/2/files/upload" `
+                --header "Authorization: Bearer $accessToken" `
+                --header "Dropbox-API-Arg: $arg" `
+                --header "Content-Type: application/octet-stream" `
+                --data-binary "@$file"
+
+              if ($LASTEXITCODE -ne 0) {
+                  throw "Dropbox upload failed: $file"
+              }
+              Write-Host ""
+          }
+
+          Write-Host "Upload completed successfully."

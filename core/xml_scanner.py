@@ -18,7 +18,13 @@ import shutil
 import tempfile
 import zipfile
 
-from core.constants import GUID_TAG_PATTERN, NUMBER_PATTERN, TEXTS_FILE_PATTERN
+from core.constants import (
+    COMMENT_LINE_PATTERN,
+    GUID_TAG_PATTERN,
+    NUMBER_PATTERN,
+    TEXTS_FILE_PATTERN,
+    XML_COMMENT_PATTERN,
+)
 
 
 def is_zip_path(path):
@@ -33,6 +39,32 @@ def extract_guids_from_text(content):
     references in other tags (e.g. ``<Product>``) are intentionally ignored.
     """
     return set(GUID_TAG_PATTERN.findall(content))
+
+
+def extract_comments_from_text(content):
+    """Return ``{guid: comment}`` for all "GUID - comment" lines inside XML comments.
+
+    Only text inside ``<!-- ... -->`` is searched, so normal XML content is
+    never mistaken for a comment. Example::
+
+        <!--
+        2144009900 - Praefectus Specialists Name
+        2144009901 - Praefectus Specialists Description
+        -->
+
+    -> ``{"2144009900": "Praefectus Specialists Name",
+          "2144009901": "Praefectus Specialists Description"}``
+
+    If the same GUID is commented several times in one text, the FIRST
+    comment wins.
+    """
+    comments = {}
+    for block in XML_COMMENT_PATTERN.findall(content):
+        for guid, text in COMMENT_LINE_PATTERN.findall(block):
+            text = text.strip()
+            if text:
+                comments.setdefault(guid, text)
+    return comments
 
 
 def normalize_file_path(raw_path):
@@ -84,17 +116,24 @@ def iter_xml_files(path):
                 yield os.path.relpath(full_path, path), content
 
 
-def collect_guids(path, predicate):
-    """Scan all XML files and collect GUIDs matching ``predicate``.
+def scan_mod(path, predicate):
+    """Scan all XML files once and collect GUIDs, their files and their comments.
 
     :param path:      mod folder or ZIP archive
     :param predicate: callable ``(guid_str) -> bool`` deciding which GUIDs to keep
-                      (e.g. ``config.is_dummy_guid``)
-    :returns: tuple ``(guid_files, xml_count)`` where ``guid_files`` maps each
-              matching GUID to a set of normalised file paths it was found in,
-              and ``xml_count`` is the number of XML files scanned.
+    :returns: tuple ``(guid_files, comments, xml_count)``
+
+              * ``guid_files``: ``{guid: {normalised file paths}}`` for every
+                GUID defined in a <GUID>/<LineId> tag that passes ``predicate``
+              * ``comments``: ``{guid: comment}`` for ALL "GUID - comment"
+                lines found in XML comments of ANY file of the mod (the
+                comment may live in a different file than the definition).
+                Not filtered by ``predicate`` so the caller can report
+                comments whose GUID was not registered. First comment wins.
+              * ``xml_count``: number of XML files scanned
     """
     guid_files = {}
+    all_comments = {}
     xml_count = 0
     for rel_path, content in iter_xml_files(path):
         xml_count += 1
@@ -102,6 +141,23 @@ def collect_guids(path, predicate):
         for guid in extract_guids_from_text(content):
             if predicate(guid):
                 guid_files.setdefault(guid, set()).add(norm_path)
+        for guid, text in extract_comments_from_text(content).items():
+            all_comments.setdefault(guid, text)
+
+    return guid_files, all_comments, xml_count
+
+
+def collect_guids(path, predicate):
+    """Scan all XML files and collect GUIDs matching ``predicate``.
+
+    :param path:      mod folder or ZIP archive
+    :param predicate: callable ``(guid_str) -> bool`` deciding which GUIDs to keep
+                      (e.g. ``app.game.is_dummy_guid``)
+    :returns: tuple ``(guid_files, xml_count)`` where ``guid_files`` maps each
+              matching GUID to a set of normalised file paths it was found in,
+              and ``xml_count`` is the number of XML files scanned.
+    """
+    guid_files, _, xml_count = scan_mod(path, predicate)
     return guid_files, xml_count
 
 
