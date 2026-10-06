@@ -40,9 +40,17 @@ GUIDs from your own GUID ranges.
   and dummy ranges for each game.
 - **Collision protection.** GUIDs that are already registered are never
   assigned again.
+- **Update check.** At startup the tool checks GitHub for a newer version
+  and shows a hint with a link to the download page.
 - **German and English UI.** Light, dark and system themes are available.
 
-### Requirements
+### Download
+
+Ready-to-use Windows builds (`Anno_GUID_Tool_v<version>.exe`) are available
+on the [Releases page](https://github.com/gz2k2/Anno_GUID_Tool/releases).
+No Python installation is needed for the `.exe`.
+
+### Requirements (running from source)
 
 - Python 3 with Tkinter (included in the standard Windows installer)
 - [CustomTkinter](https://github.com/TomSchimansky/CustomTkinter)
@@ -52,6 +60,8 @@ pip install customtkinter
 ```
 
 ### Getting started
+
+Start the `.exe`, or run from source:
 
 ```bash
 python main.py
@@ -131,6 +141,30 @@ What happens:
 > ⚠️ Files are overwritten directly and this **cannot be undone**. Keep a
 > backup or use version control.
 
+#### Top bar
+
+| Element | Function |
+|---|---|
+| **Game selector** | Switches between Anno 117 and Anno 1800 (database and GUID ranges) |
+| **Ko-Fi Sponsor** | Opens the author's Ko-fi page |
+| **GitHub** | Opens the project page on GitHub |
+
+The window title shows program version and active game, e.g.
+`Anno GUID Tool v1.23.45 by gz2k2 - Anno 1800`.
+
+#### Update check
+
+At every start the tool compares its own version with `version.txt` on the
+`main` branch of the GitHub repository.
+
+- If a newer version exists, a popup shows both versions and a clickable
+  link to the GitHub page.
+- The check runs in the background and does not delay the start.
+- Without internet access, behind a blocking proxy or after a 5-second
+  timeout, nothing is shown.
+- Version comparison is numeric (`v1.10.0` is newer than `v1.9.9`). A
+  pre-release such as `v1.2.0-beta` counts as older than `v1.2.0`.
+
 #### Tab "Settings"
 
 | Sub tab | Content |
@@ -160,7 +194,8 @@ Rules checked when you save:
 | `config.ini` | Working directory | General settings and GUID ranges per game |
 | `guid_database_anno117.json` | Working directory | GUID database for Anno 117 |
 | `guid_database_anno1800.json` | Working directory | GUID database for Anno 1800 |
-| `version.txt` | Next to `main.py` (or the `.exe`) | Program version shown in the title, e.g. `v1.23.45` |
+| `version.txt` | Next to `main.py`; bundled into the `.exe` | Program version for title and update check, e.g. `v1.23.45` |
+| `AnnoGUIDTool.ico` | Next to `main.py` (optional) | Program icon used when building the `.exe` |
 
 Example `config.ini`:
 
@@ -193,20 +228,48 @@ Example database entry:
 - Old single-range settings are converted to range lists.
 - Old database entries are converted to the new format.
 
+### Building the EXE
+
+```bash
+pip install customtkinter pyinstaller
+python build_onefile.py          # or: python build_onefile.py --clean
+```
+
+The result is `dist/Anno_GUID_Tool_v<version>.exe`. The version is taken
+from `version.txt`, a leading `v` is removed for the file name. If
+`AnnoGUIDTool.ico` exists in the project root, it is used as program icon.
+
+### Automatic releases (GitHub Actions)
+
+Both workflows build the `.exe` with `build_onefile.py` on Windows.
+
+| Workflow | Trigger | Result |
+|---|---|---|
+| `release.yml` | Tag `v*`, a push to `main` with a commit message starting with `v`, or manual start | GitHub release with the `.exe`. Tag builds are full releases, others pre-releases. An optional `changelog.md` is added to the release text. |
+| `release_dropbox.yml` | Tag `db*` or manual start | Uploads the `.exe` to Dropbox (`/Anno_GUID_Tool/`). Needs the secrets `DROPBOX_APP_KEY`, `DROPBOX_APP_SECRET`, `DROPBOX_REFRESH_TOKEN`. |
+
 ### Project structure
 
 ```
 AnnoGUIDTool/
 ├── main.py                 Entry point
-├── app.py                  Main window, game selector, translation, tab wiring
+├── app.py                  Main window, top bar, game selector, translation, update check start
 ├── version.txt             Program version
+├── build_onefile.py        Builds the one-file .exe with PyInstaller
+├── AnnoGUIDTool.ico        Program icon (optional)
+├── .github/workflows/
+│   ├── release.yml         Build + GitHub release
+│   └── release_dropbox.yml Build + Dropbox upload
 ├── core/
 │   ├── constants.py        Program info, file names, default ranges, regex patterns
 │   ├── translations.py     All UI texts (DE / EN)
 │   ├── config_manager.py   config.ini, GUID range lists per game
 │   ├── guid_database.py    JSON database, free GUID allocation, migration
 │   ├── xml_scanner.py      Read and rewrite XML files in folders and ZIPs
+│   ├── update_checker.py   Version comparison with GitHub, project URLs
 │   └── version.py          Reads version.txt
+├── dialogs/
+│   └── update_dialog.py    Popup "new version available"
 └── tabs/
     ├── database_tab.py     Tab "GUID Database"
     ├── replace_tab.py      Tab "Replace Dummy GUIDs"
@@ -220,6 +283,7 @@ The modules in `core/` have no UI code. All code is documented in English.
 - Column widths of the GUID table: constants at the top of
   `tabs/database_tab.py`
 - Program name and author: `core/constants.py`
+- GitHub and Ko-fi links, update check URL: `core/update_checker.py`
 
 ### Author
 
@@ -254,10 +318,18 @@ echte, freie GUIDs aus deinen eigenen GUID Ranges.
   eigene Ranges und Dummy Ranges festlegen.
 - **Schutz vor Doppelvergabe.** Bereits registrierte GUIDs werden nie erneut
   vergeben.
+- **Update-Prüfung.** Beim Start prüft das Tool auf GitHub, ob eine neuere
+  Version vorhanden ist, und zeigt einen Hinweis mit Link zur Download-Seite.
 - **Oberfläche auf Deutsch und Englisch.** Helles, dunkles und System-Design
   stehen zur Wahl.
 
-### Voraussetzungen
+### Download
+
+Fertige Windows-Versionen (`Anno_GUID_Tool_v<version>.exe`) gibt es auf der
+[Releases-Seite](https://github.com/gz2k2/Anno_GUID_Tool/releases). Für die
+`.exe` wird kein Python benötigt.
+
+### Voraussetzungen (Start aus dem Quellcode)
 
 - Python 3 mit Tkinter (im Standard-Installer für Windows enthalten)
 - [CustomTkinter](https://github.com/TomSchimansky/CustomTkinter)
@@ -267,6 +339,8 @@ pip install customtkinter
 ```
 
 ### Start
+
+Die `.exe` starten oder aus dem Quellcode:
 
 ```bash
 python main.py
@@ -349,6 +423,30 @@ Was dabei passiert:
 > rückgängig machen**. Lege vorher ein Backup an oder nutze eine
 > Versionsverwaltung.
 
+#### Obere Leiste
+
+| Element | Funktion |
+|---|---|
+| **Spielauswahl** | Wechselt zwischen Anno 117 und Anno 1800 (Datenbank und GUID Ranges) |
+| **Ko-Fi Sponsor** | Öffnet die Ko-fi-Seite des Autors |
+| **GitHub** | Öffnet die Projektseite auf GitHub |
+
+Die Titelleiste zeigt Programmversion und aktives Spiel, z. B.
+`Anno GUID Tool v1.23.45 by gz2k2 - Anno 1800`.
+
+#### Update-Prüfung
+
+Bei jedem Start vergleicht das Tool seine Version mit der `version.txt` im
+`main`-Branch des GitHub-Repositorys.
+
+- Gibt es eine neuere Version, zeigt ein Popup beide Versionen und einen
+  klickbaren Link zur GitHub-Seite.
+- Die Prüfung läuft im Hintergrund und verzögert den Start nicht.
+- Ohne Internet, hinter einem blockierenden Proxy oder nach 5 Sekunden
+  Zeitüberschreitung wird nichts angezeigt.
+- Verglichen wird numerisch (`v1.10.0` ist neuer als `v1.9.9`). Eine
+  Vorabversion wie `v1.2.0-beta` gilt als älter als `v1.2.0`.
+
 #### Tab „Einstellungen“
 
 | Untertab | Inhalt |
@@ -378,7 +476,8 @@ Diese Regeln werden beim Speichern geprüft:
 | `config.ini` | Arbeitsverzeichnis | Allgemeine Einstellungen und GUID Ranges pro Spiel |
 | `guid_database_anno117.json` | Arbeitsverzeichnis | GUID-Datenbank für Anno 117 |
 | `guid_database_anno1800.json` | Arbeitsverzeichnis | GUID-Datenbank für Anno 1800 |
-| `version.txt` | Neben `main.py` (bzw. der `.exe`) | Programmversion für die Titelleiste, z. B. `v1.23.45` |
+| `version.txt` | Neben `main.py`; in die `.exe` eingebettet | Programmversion für Titelleiste und Update-Prüfung, z. B. `v1.23.45` |
+| `AnnoGUIDTool.ico` | Neben `main.py` (optional) | Programm-Icon für den Bau der `.exe` |
 
 Die Formate von `config.ini` und den Datenbanken findest du oben im englischen
 Teil unter [Files](#files).
@@ -390,20 +489,48 @@ Teil unter [Files](#files).
 - Alte Einzel-Ranges werden in Range-Listen umgewandelt.
 - Alte Datenbankeinträge werden ins neue Format umgestellt.
 
+### EXE bauen
+
+```bash
+pip install customtkinter pyinstaller
+python build_onefile.py          # oder: python build_onefile.py --clean
+```
+
+Ergebnis ist `dist/Anno_GUID_Tool_v<version>.exe`. Die Version stammt aus
+`version.txt`, ein führendes `v` wird für den Dateinamen entfernt. Liegt
+`AnnoGUIDTool.ico` im Projektordner, wird es als Programm-Icon verwendet.
+
+### Automatische Releases (GitHub Actions)
+
+Beide Workflows bauen die `.exe` unter Windows mit `build_onefile.py`.
+
+| Workflow | Auslöser | Ergebnis |
+|---|---|---|
+| `release.yml` | Tag `v*`, Push auf `main` mit Commit-Nachricht, die mit `v` beginnt, oder manueller Start | GitHub-Release mit der `.exe`. Tag-Builds sind vollständige Releases, andere Vorabversionen. Eine optionale `changelog.md` wird in den Release-Text übernommen. |
+| `release_dropbox.yml` | Tag `db*` oder manueller Start | Lädt die `.exe` nach Dropbox (`/Anno_GUID_Tool/`). Benötigt die Secrets `DROPBOX_APP_KEY`, `DROPBOX_APP_SECRET`, `DROPBOX_REFRESH_TOKEN`. |
+
 ### Projektstruktur
 
 ```
 AnnoGUIDTool/
 ├── main.py                 Startpunkt
-├── app.py                  Hauptfenster, Spielauswahl, Übersetzung, Verbindung der Tabs
+├── app.py                  Hauptfenster, obere Leiste, Spielauswahl, Übersetzung, Start der Update-Prüfung
 ├── version.txt             Programmversion
+├── build_onefile.py        Baut die Ein-Datei-.exe mit PyInstaller
+├── AnnoGUIDTool.ico        Programm-Icon (optional)
+├── .github/workflows/
+│   ├── release.yml         Build + GitHub-Release
+│   └── release_dropbox.yml Build + Dropbox-Upload
 ├── core/
 │   ├── constants.py        Programminfo, Dateinamen, Standard-Ranges, Regex
 │   ├── translations.py     Alle Texte (DE / EN)
 │   ├── config_manager.py   config.ini, GUID Range-Listen pro Spiel
 │   ├── guid_database.py    JSON-Datenbank, Vergabe freier GUIDs, Migration
 │   ├── xml_scanner.py      XML-Dateien in Ordnern und ZIPs lesen und schreiben
+│   ├── update_checker.py   Versionsvergleich mit GitHub, Projekt-Links
 │   └── version.py          Liest version.txt
+├── dialogs/
+│   └── update_dialog.py    Popup „Neue Version verfügbar“
 └── tabs/
     ├── database_tab.py     Tab „GUID Datenbank“
     ├── replace_tab.py      Tab „Dummy-GUIDs Ersetzen“
@@ -417,6 +544,7 @@ auf Englisch dokumentiert.
 
 - Spaltenbreiten der GUID-Tabelle: Konstanten oben in `tabs/database_tab.py`
 - Programmname und Autor: `core/constants.py`
+- GitHub- und Ko-fi-Link, Adresse für die Update-Prüfung: `core/update_checker.py`
 
 ### Autor
 
