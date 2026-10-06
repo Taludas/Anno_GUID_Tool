@@ -1,0 +1,185 @@
+{
+    "2144000003": [
+        "[Specialists] super-specialists [gz2k2]/data/base/config/export/specialists/PraefectusAdriana.xml",
+        "[Specialists] super-specialists [gz2k2]/data/base/config/gui/texts_*.xml"
+    ],
+    "2144000004": [
+        "[Specialists] super-specialists [gz2k2]/data/base/config/export/specialists/PraefectusAdriana.xml"
+    ],
+    "2144000007": [
+        "[Specialists] super-specialists [gz2k2]/data/base/config/export/specialists/PraefectusAntonius.xml"
+    ],
+    "2144000006": [
+        "[Specialists] super-specialists [gz2k2]/data/base/config/export/specialists/PraefectusAntonius.xml",
+        "[Specialists] super-specialists [gz2k2]/data/base/config/gui/texts_*.xml"
+    ],
+    "2144000010": [
+        "[Specialists] super-specialists [gz2k2]/data/base/config/export/specialists/PraefectusAurelia.xml"
+    ],
+    "2144000009": [
+        "[Specialists] super-specialists [gz2k2]/data/base/config/export/specialists/PraefectusAurelia.xml",
+        "[Specialists] super-specialists [gz2k2]/data/base/config/gui/texts_*.xml"
+    ],
+    "2144000028": [
+        "[Specialists] super-specialists [gz2k2]/data/base/config/export/specialists/PraefectusAurora.xml"
+    ],
+    "2144000027": [
+        "[Specialists] super-specialists [gz2k2]/data/base/config/export/specialists/PraefectusAurora.xml",
+        "[Specialists] super-specialists [gz2k2]/data/base/config/gui/texts_*.xml"
+    ],
+    "2144000012": [
+        "[Specialists] super-specialists [gz2k2]/data/base/config/export/specialists/PraefectusCaius.xml",
+        "[Specialists] super-specialists [gz2k2]/data/base/config/gui/texts_*.xml"
+    ],
+    "2144000013": [
+        "[Specialists] super-specialists [gz2k2]/data/base/config/export/specialists/PraefectusCaius.xml"
+    ],
+    "2144000015": [
+        "[Specialists] super-specialists [gz2k2]/data/base/config/export/specialists/PraefectusJuno.xml",
+        "[Specialists] super-specialists [gz2k2]/data/base/config/gui/texts_*.xml"
+    ],
+    "2144000016": [
+        "[Specialists] super-specialists [gz2k2]/data/base/config/export/specialists/PraefectusJuno.xml"
+    ],
+    "2144000019": [
+        "[Specialists] super-specialists [gz2k2]/data/base/config/export/specialists/PraefectusLaetitia.xml"
+    ],
+    "2144000018": [
+        "[Specialists] super-specialists [gz2k2]/data/base/config/export/specialists/PraefectusLaetitia.xml",
+        "[Specialists] super-specialists [gz2k2]/data/base/config/gui/texts_*.xml"
+    ],
+    "2144000022": [
+        "[Specialists] super-specialists [gz2k2]/data/base/config/export/specialists/PraefectusLiberius.xml"
+    ],
+    "2144000021": [
+        "[Specialists] super-specialists [gz2k2]/data/base/config/export/specialists/PraefectusLiberius.xml",
+        "[Specialists] super-specialists [gz2k2]/data/base/config/gui/texts_*.xml"
+    ],
+    "2144000025": [
+        "[Specialists] super-specialists [gz2k2]/data/base/config/export/specialists/PraefectusLucius.xml"
+    ],
+    "2144000024": [
+        "[Specialists] super-specialists [gz2k2]/data/base/config/export/specialists/PraefectusLucius.xml",
+        "[Specialists] super-specialists [gz2k2]/data/base/config/gui/texts_*.xml"
+    ],
+    "2144000031": [
+        "[Specialists] super-specialists [gz2k2]/data/base/config/export/specialists/PraefectusMaximilian.xml"
+    ],
+    "2144000030": [
+        "[Specialists] super-specialists [gz2k2]/data/base/config/export/specialists/PraefectusMaximilian.xml",
+        "[Specialists] super-specialists [gz2k2]/data/base/config/gui/texts_*.xml"
+    ],
+    "2144000000": [
+        "[Specialists] super-specialists [gz2k2]/data/base/config/export/specialists.chest_account.include.xml",
+        "[Specialists] super-specialists [gz2k2]/data/base/config/gui/texts_*.xml"
+    ],
+    "2144000001": [
+        "[Specialists] super-specialists [gz2k2]/data/base/config/export/specialists.chest_trader.include.xml",
+        "[Specialists] super-specialists [gz2k2]/data/base/config/gui/texts_*.xml"
+    ],
+    "2144000002": [
+        "[Specialists] super-specialists [gz2k2]/data/base/config/export/trigger.keybind.include.xml"
+    ],
+    "2144000100": [
+        "[Specialists] super-specialists [gz2k2]/data/base/config/export/trigger.unlock_from_start.include.xml"
+    ],
+    "2144000017": [
+        "[Specialists] super-specialists [gz2k2]/data/base/config/gui/texts_*.xml"
+    ],
+    "2144000008": [
+        "[Specialists] super-specialists [gz2k2]/data/base/config/gui/texts_*.xml"
+    ],
+    "2144000011": [
+        "[Specialists] super-specialists [gz2k2]/data/base/config/gui/texts_*.xml"
+    ],
+    "2144000005": [
+        "[Specialists] super-specialists [gz2k2]/data/base/config/gui/texts_*.xml"
+    ],
+    "2144000014": [
+        "[Specialists] super-specialists [gz2k2]/data/base/config/gui/texts_*.xml"
+    ],
+    "2144000023": [
+        "[Specialists] super-specialists [gz2k2]/data/base/config/gui/texts_*.xml"
+    ],
+    "2144000020": [
+        "[Specialists] super-specialists [gz2k2]/data/base/config/gui/texts_*.xml"
+    ],
+    "2144000029": [
+        "[Specialists] super-specialists [gz2k2]/data/base/config/gui/texts_*.xml"
+    ],
+    "2144000032": [
+        "[Specialists] super-specialists [gz2k2]/data/base/config/gui/texts_*.xml"
+    ],
+    "2144000026": [
+        "[Specialists] super-specialists [gz2k2]/data/base/config/gui/texts_*.xml"
+    ],
+    "2144000092": [
+        "[Gameplay] Custom Research Options [gz2k2]/data/base/config/export/tech.workforce.include.xml",
+        "[Gameplay] Custom Research Options [gz2k2]/data/base/config/gui/texts_*.xml"
+    ],
+    "2144000094": [
+        "[Gameplay] Custom Research Options [gz2k2]/data/base/config/export/tech.workforce.include.xml"
+    ],
+    "2144000093": [
+        "[Gameplay] Custom Research Options [gz2k2]/data/base/config/export/tech.workforce.include.xml",
+        "[Gameplay] Custom Research Options [gz2k2]/data/base/config/gui/texts_*.xml"
+    ],
+    "2144000090": [
+        "[Gameplay] Custom Research Options [gz2k2]/data/base/config/export/technodes.military.include.xml",
+        "[Gameplay] Custom Research Options [gz2k2]/data/base/config/export/test.xml",
+        "[Gameplay] Custom Research Options [gz2k2]/data/base/config/gui/texts_*.xml"
+    ],
+    "2144000091": [
+        "[Gameplay] Custom Research Options [gz2k2]/data/base/config/export/technodes.military.include.xml",
+        "[Gameplay] Custom Research Options [gz2k2]/data/base/config/export/test.xml",
+        "[Gameplay] Custom Research Options [gz2k2]/data/base/config/gui/texts_*.xml"
+    ],
+    "2144000060": [
+        "[Gameplay] Custom Research Options [gz2k2]/data/base/config/export/unlocktrigger.include.xml"
+    ],
+    "2144000072": [
+        "[Gameplay] Custom Devotion System [gz2k2]/data/base/config/export/multi.exaltation.effects.include.xml"
+    ],
+    "2144000073": [
+        "[Gameplay] Custom Devotion System [gz2k2]/data/base/config/export/multi.exaltation.effects.include.xml"
+    ],
+    "2144000077": [
+        "[Gameplay] Custom Devotion System [gz2k2]/data/base/config/export/multi.exaltation.effects.include.xml"
+    ],
+    "2144000082": [
+        "[Gameplay] Custom Devotion System [gz2k2]/data/base/config/export/multi.exaltation.effects.include.xml"
+    ],
+    "2144000079": [
+        "[Gameplay] Custom Devotion System [gz2k2]/data/base/config/export/multi.exaltation.effects.include.xml"
+    ],
+    "2144000074": [
+        "[Gameplay] Custom Devotion System [gz2k2]/data/base/config/export/multi.exaltation.effects.include.xml"
+    ],
+    "2144000070": [
+        "[Gameplay] Custom Devotion System [gz2k2]/data/base/config/export/multi.exaltation.effects.include.xml"
+    ],
+    "2144000071": [
+        "[Gameplay] Custom Devotion System [gz2k2]/data/base/config/export/multi.exaltation.effects.include.xml"
+    ],
+    "2144000076": [
+        "[Gameplay] Custom Devotion System [gz2k2]/data/base/config/export/multi.exaltation.effects.include.xml"
+    ],
+    "2144000080": [
+        "[Gameplay] Custom Devotion System [gz2k2]/data/base/config/export/multi.exaltation.effects.include.xml"
+    ],
+    "2144000078": [
+        "[Gameplay] Custom Devotion System [gz2k2]/data/base/config/export/multi.exaltation.effects.include.xml"
+    ],
+    "2144000075": [
+        "[Gameplay] Custom Devotion System [gz2k2]/data/base/config/export/multi.exaltation.effects.include.xml"
+    ],
+    "2144000081": [
+        "[Gameplay] Custom Devotion System [gz2k2]/data/base/config/export/multi.exaltation.effects.include.xml"
+    ],
+    "2144000084": [
+        "[Gameplay] Custom Devotion System [gz2k2]/data/base/config/export/patron.minerva.include.xml"
+    ],
+    "2144000083": [
+        "[Gameplay] Custom Devotion System [gz2k2]/data/base/config/export/patron.minerva.include.xml"
+    ]
+}
