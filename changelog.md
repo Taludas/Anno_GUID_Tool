@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.3
+
+### Fixed
+- Fixed folder prefix handling in relative file paths so that exactly one directory level above `/data/` is retained (e.g. `[ModName]/data/base/...`), regardless of whether the mod folder itself or a parent directory is selected.
+
+
 ## 0.5.2
 
 ### Added

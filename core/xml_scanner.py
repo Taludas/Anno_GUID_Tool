@@ -21,9 +21,9 @@ import zipfile
 
 from core.constants import (
     COMMENT_LINE_PATTERN,
+    DEFAULT_COMMENT_LANGUAGE,
     GUID_TAG_PATTERN,
     NUMBER_PATTERN,
-    DEFAULT_COMMENT_LANGUAGE,
     STANDARD_BLOCK_PATTERN,
     STANDARD_GUID_PATTERN,
     STANDARD_NAME_PATTERN,
@@ -157,15 +157,39 @@ def normalize_file_path(raw_path):
     """Normalise a mod-relative file path for display / database storage.
 
     * Backslashes are converted to forward slashes.
+    * Keeps only ONE folder level above '/data/' (e.g. '[ModName]/data/base/...').
     * Localisation files (``texts_german.xml``, ``texts_english.xml`` …) are
       collapsed into ``texts_*.xml`` so a LineId shows up only once instead
       of once per language.
     """
     normalized = raw_path.replace("\\", "/")
+    
+    parts = [p for p in normalized.split("/") if p]
+    if "data" in parts:
+        data_index = parts.index("data")
+        if data_index > 0:
+            normalized = "/".join(parts[data_index - 1:])
+
     directory, filename = os.path.split(normalized)
     if TEXTS_FILE_PATTERN.match(filename):
         filename = "texts_*.xml"
     return f"{directory}/{filename}" if directory else filename
+
+
+def mod_folder_prefix(path):
+    """Name of the selected mod folder, used as first part of every location.
+
+    Example: selected folder ``C:/Mods/[Specialists] super-specialists [gz2k2]``
+    -> ``"[Specialists] super-specialists [gz2k2]"``, so the location becomes
+    ``[Specialists] super-specialists [gz2k2]/data/base/...`` instead of
+    ``data/base/...``. That way the database shows which mod a GUID belongs to.
+
+    ZIP archives return "" – their entry names are used unchanged (a ZIP
+    usually already contains the mod folder as top-level entry).
+    """
+    if is_zip_path(path) or not os.path.isdir(path):
+        return ""
+    return os.path.basename(os.path.normpath(path))
 
 
 def iter_xml_files(path):
@@ -213,7 +237,7 @@ def scan_mod(path, predicate, language=DEFAULT_COMMENT_LANGUAGE):
     :returns: tuple ``(guid_files, comments, names, xml_count)``
 
               * ``guid_files``: ``{guid: {normalised file paths}}`` for every
-                GUID defined in a <GUID>/<LineId> tag that passes ``predicate``
+                GUID defined in a <GUID>/<LineId> tag that passes ``predicate``.
               * ``comments``: ``{guid: comment}`` for ALL "GUID - comment"
                 lines found in XML comments of ANY file of the mod (the
                 comment may live in a different file than the definition).
@@ -227,6 +251,7 @@ def scan_mod(path, predicate, language=DEFAULT_COMMENT_LANGUAGE):
                      texts_english.xml -> any other language file
               * ``xml_count``: number of XML files scanned
     """
+    prefix = mod_folder_prefix(path)   # "" for ZIP archives
     guid_files = {}
     all_comments = {}
     asset_names = {}
@@ -234,7 +259,8 @@ def scan_mod(path, predicate, language=DEFAULT_COMMENT_LANGUAGE):
     xml_count = 0
     for rel_path, content in iter_xml_files(path):
         xml_count += 1
-        norm_path = normalize_file_path(rel_path)
+        full_rel = os.path.join(prefix, rel_path) if prefix else rel_path
+        norm_path = normalize_file_path(full_rel)
         for guid in extract_guids_from_text(content):
             if predicate(guid):
                 guid_files.setdefault(guid, set()).add(norm_path)
@@ -324,3 +350,4 @@ def rewrite_xml_files(path, transform):
             if new_content != content:
                 with open(full_path, "w", encoding="utf-8") as f:
                     f.write(new_content)
+                    
