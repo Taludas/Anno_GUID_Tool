@@ -22,6 +22,7 @@ This module contains no UI code; the popup is in ``dialogs/update_dialog.py``.
 
 import re
 import threading
+import time
 import urllib.request
 
 #: GitHub project page (opened from the update popup).
@@ -42,7 +43,7 @@ def parse_version(text):
 
     Result: ``((major, minor, patch, ...), is_final_release)``
 
-    * Missing parts count as 0 -> "1.2" == "1.2.0".
+    * Pads versions to at least 3 parts (e.g. "1.2" -> (1, 2, 0)).
     * A suffix such as "-beta" marks a pre-release, which is OLDER than the
       final release with the same numbers ("1.2.0-beta" < "1.2.0").
     * Returns None if the text contains no version number.
@@ -51,8 +52,8 @@ def parse_version(text):
     if not match:
         return None
     numbers = [int(part) for part in match.group(1).split(".")]
-    while len(numbers) > 1 and numbers[-1] == 0:  # "1.2.0" -> (1, 2)
-        numbers.pop()
+    while len(numbers) < 3:
+        numbers.append(0)
     return tuple(numbers), match.group(2) is None
 
 
@@ -72,8 +73,9 @@ def fetch_remote_version():
 
     Raises an exception on any network or decoding problem.
     """
+    cache_buster_url = f"{VERSION_URL}?_={int(time.time())}"
     request = urllib.request.Request(
-        VERSION_URL,
+        cache_buster_url,
         headers={"User-Agent": "Anno-GUID-Tool-Update-Check", "Cache-Control": "no-cache"},
     )
     with urllib.request.urlopen(request, timeout=REQUEST_TIMEOUT) as response:
