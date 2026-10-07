@@ -76,6 +76,16 @@ class GUIDManagerApp(ctk.CTk):
         super().__init__()
         self.geometry("1050x820")
 
+        # Window icon
+        for icon_name in ("AnnoGUIDTool.ico", "icon.ico"):
+            icon_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), icon_name)
+            if os.path.exists(icon_path):
+                try:
+                    self.iconbitmap(icon_path)
+                    break
+                except Exception:
+                    pass
+
         #: Program version from version.txt (read once at startup), e.g. "v1.23.45"
         self.version = read_version()
 

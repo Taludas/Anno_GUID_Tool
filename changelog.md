@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## v0.6.0 (thx to Taludas)
 
 ### Added
 - **GUID collision warning on import**: a dialog lists GUIDs of a registered mod that
