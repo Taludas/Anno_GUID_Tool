@@ -136,6 +136,20 @@ class GuidDatabase:
         entry["comment"] = comment
         return True
 
+    def set_comment_if_empty(self, guid, comment):
+        """Set the comment of an EXISTING GUID only if it has no comment yet.
+
+        Used for fallback names (<Name> / texts) so they never overwrite a
+        comment that was stored before (e.g. from a "GUID - comment" line).
+
+        :returns: True if the comment was set.
+        """
+        entry = self.entries.get(guid)
+        if entry is None or entry["comment"] or not comment:
+            return False
+        entry["comment"] = comment
+        return True
+
     def move_to(self, guids, target):
         """Move ``guids`` (with locations and comment) into the database ``target``.
 

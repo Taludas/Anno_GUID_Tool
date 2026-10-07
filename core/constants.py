@@ -135,6 +135,48 @@ COMMENT_LINE_PATTERN = re.compile(
     re.MULTILINE,
 )
 
+# ---------------------------------------------------------------------------
+# Name extraction (fallback when a GUID has no "GUID - comment" line)
+# ---------------------------------------------------------------------------
+
+#: One ``<Standard>...</Standard>`` block of an asset (Anno 117 and Anno 1800).
+#: It contains the GUID and the internal name of the asset::
+#:     <Standard>
+#:       <GUID>2144000003</GUID>
+#:       <Name>Praefectus Adriana</Name>
+STANDARD_BLOCK_PATTERN = re.compile(r"<Standard>(.*?)</Standard>", re.DOTALL | re.IGNORECASE)
+
+#: ``<GUID>`` and ``<Name>`` inside a Standard block (group 1 = value).
+STANDARD_GUID_PATTERN = re.compile(r"<GUID>\s*(\d+)\s*</GUID>", re.IGNORECASE)
+STANDARD_NAME_PATTERN = re.compile(r"<Name>(.*?)</Name>", re.DOTALL | re.IGNORECASE)
+
+#: Text entry in texts_*.xml, ID BEFORE the text (Anno 1800 style)::
+#:     <Text>
+#:       <GUID>2141010101</GUID>
+#:       <Text>Benötigt Uran zur Stromerzeugung</Text>
+#:     </Text>
+#: Group 2 = GUID / LineId, group 3 = text.
+TEXT_ID_FIRST_PATTERN = re.compile(
+    r"<(GUID|LineId)>\s*(\d+)\s*</\1>\s*<Text>(.*?)</Text>",
+    re.DOTALL | re.IGNORECASE,
+)
+
+#: Text entry in texts_*.xml, text BEFORE the ID (Anno 117 style)::
+#:     <Text>
+#:       <Text>00_Praefectus Specialists (Truhe)</Text>
+#:       <LineId>2144000000</LineId>
+#:     </Text>
+#: Group 1 = text, group 3 = GUID / LineId.
+#: ``[^<]*`` keeps the match inside ONE inner <Text> element.
+TEXT_TEXT_FIRST_PATTERN = re.compile(
+    r"<Text>([^<]*)</Text>\s*<(GUID|LineId)>\s*(\d+)\s*</\2>",
+    re.IGNORECASE,
+)
+
+#: Language file that is preferred when the same GUID has a text in several
+#: texts_*.xml files (e.g. texts_english.xml and texts_german.xml).
+PREFERRED_TEXT_LANGUAGE = "english"
+
 #: Matches localisation file names such as "texts_german.xml".
 #: All language variants are grouped as "texts_*.xml" in the database.
 TEXTS_FILE_PATTERN = re.compile(r"^texts_.*\.xml$", re.IGNORECASE)

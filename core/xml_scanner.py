@@ -13,6 +13,7 @@ All functions here are UI-independent (no Tkinter), so they can be reused
 or unit-tested on their own.
 """
 
+import html
 import os
 import shutil
 import tempfile
@@ -22,6 +23,12 @@ from core.constants import (
     COMMENT_LINE_PATTERN,
     GUID_TAG_PATTERN,
     NUMBER_PATTERN,
+    PREFERRED_TEXT_LANGUAGE,
+    STANDARD_BLOCK_PATTERN,
+    STANDARD_GUID_PATTERN,
+    STANDARD_NAME_PATTERN,
+    TEXT_ID_FIRST_PATTERN,
+    TEXT_TEXT_FIRST_PATTERN,
     TEXTS_FILE_PATTERN,
     XML_COMMENT_PATTERN,
 )
@@ -65,6 +72,69 @@ def extract_comments_from_text(content):
             if text:
                 comments.setdefault(guid, text)
     return comments
+
+
+def _clean_text(value):
+    """Trim, collapse inner whitespace/line breaks and decode XML entities (&amp; -> &)."""
+    return " ".join(html.unescape(value).split())
+
+
+def is_texts_file(rel_path):
+    """True if the file name matches texts_*.xml (localisation file)."""
+    return bool(TEXTS_FILE_PATTERN.match(os.path.basename(rel_path.replace("\\", "/"))))
+
+
+def extract_asset_names(content):
+    """Return ``{guid: name}`` from the ``<Standard>`` blocks of asset XMLs.
+
+    Same structure in Anno 117 and Anno 1800::
+
+        <Standard>
+          <GUID>2144000003</GUID>
+          <Name>Praefectus Adriana</Name>
+
+    Blocks without GUID or without (non-empty) Name are ignored. If a GUID
+    appears in several blocks, the FIRST name wins.
+    """
+    names = {}
+    for block in STANDARD_BLOCK_PATTERN.findall(content):
+        guid = STANDARD_GUID_PATTERN.search(block)
+        name = STANDARD_NAME_PATTERN.search(block)
+        if guid and name:
+            text = _clean_text(name.group(1))
+            if text:
+                names.setdefault(guid.group(1), text)
+    return names
+
+
+def extract_text_names(content):
+    """Return ``{guid: text}`` from the text entries of a texts_*.xml file.
+
+    Both layouts are supported:
+
+    * Anno 1800 – ID first:   ``<Text><GUID>…</GUID><Text>…</Text></Text>``
+    * Anno 117  – text first: ``<Text><Text>…</Text><LineId>…</LineId></Text>``
+
+    ``<GUID>`` and ``<LineId>`` are accepted in both layouts. XML comments
+    are removed first so commented-out entries are not used.
+    """
+    content = XML_COMMENT_PATTERN.sub("", content)
+    names = {}
+    for _, guid, text in TEXT_ID_FIRST_PATTERN.findall(content):
+        text = _clean_text(text)
+        if text:
+            names.setdefault(guid, text)
+    for text, _, guid in TEXT_TEXT_FIRST_PATTERN.findall(content):
+        text = _clean_text(text)
+        if text:
+            names.setdefault(guid, text)
+    return names
+
+
+def _text_file_rank(rel_path):
+    """Sort key for texts_*.xml files: preferred language first, then by path."""
+    name = os.path.basename(rel_path).lower()
+    return (0 if PREFERRED_TEXT_LANGUAGE in name else 1, rel_path.lower())
 
 
 def normalize_file_path(raw_path):
@@ -117,11 +187,11 @@ def iter_xml_files(path):
 
 
 def scan_mod(path, predicate):
-    """Scan all XML files once and collect GUIDs, their files and their comments.
+    """Scan all XML files once and collect GUIDs, their files, comments and names.
 
     :param path:      mod folder or ZIP archive
     :param predicate: callable ``(guid_str) -> bool`` deciding which GUIDs to keep
-    :returns: tuple ``(guid_files, comments, xml_count)``
+    :returns: tuple ``(guid_files, comments, names, xml_count)``
 
               * ``guid_files``: ``{guid: {normalised file paths}}`` for every
                 GUID defined in a <GUID>/<LineId> tag that passes ``predicate``
@@ -130,10 +200,17 @@ def scan_mod(path, predicate):
                 comment may live in a different file than the definition).
                 Not filtered by ``predicate`` so the caller can report
                 comments whose GUID was not registered. First comment wins.
+              * ``names``: ``{guid: name}`` fallback names, used when a GUID
+                has no comment. Priority:
+                  1. ``<Name>`` of the asset (``<Standard>`` block, any XML)
+                  2. ``<Text>`` of the entry in a texts_*.xml file; if several
+                     languages exist, texts_english.xml is preferred
               * ``xml_count``: number of XML files scanned
     """
     guid_files = {}
     all_comments = {}
+    asset_names = {}
+    text_names_per_file = []   # [(rel_path, {guid: text}), ...]
     xml_count = 0
     for rel_path, content in iter_xml_files(path):
         xml_count += 1
@@ -144,7 +221,21 @@ def scan_mod(path, predicate):
         for guid, text in extract_comments_from_text(content).items():
             all_comments.setdefault(guid, text)
 
-    return guid_files, all_comments, xml_count
+        if is_texts_file(rel_path):
+            text_names_per_file.append((rel_path, extract_text_names(content)))
+        else:
+            for guid, name in extract_asset_names(content).items():
+                asset_names.setdefault(guid, name)
+
+    # Build the fallback names: asset <Name> first, then texts (preferred
+    # language first). Only GUIDs that were actually collected are kept.
+    names = {g: n for g, n in asset_names.items() if g in guid_files}
+    for _, file_names in sorted(text_names_per_file, key=lambda item: _text_file_rank(item[0])):
+        for guid, text in file_names.items():
+            if guid in guid_files:
+                names.setdefault(guid, text)
+
+    return guid_files, all_comments, names, xml_count
 
 
 def collect_guids(path, predicate):
@@ -157,7 +248,7 @@ def collect_guids(path, predicate):
               matching GUID to a set of normalised file paths it was found in,
               and ``xml_count`` is the number of XML files scanned.
     """
-    guid_files, _, xml_count = scan_mod(path, predicate)
+    guid_files, _, _, xml_count = scan_mod(path, predicate)
     return guid_files, xml_count
 
 

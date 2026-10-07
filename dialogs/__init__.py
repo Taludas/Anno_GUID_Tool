@@ -1,1 +1,1 @@
-"""Dialog windows of the Anno GUID Tool."""
+"""dialogs package of the Anno GUID Tool."""

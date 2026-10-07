@@ -423,11 +423,16 @@ class DatabaseTab:
              ``app.game.is_own_guid`` (numeric and inside the active game's
              own GUID range).
              At the same time, "GUID - comment" lines inside XML comments
-             (``<!-- 2144009900 - Praefectus Name -->``) are collected.
+             (``<!-- 2144009900 - Praefectus Name -->``) and fallback names
+             (asset ``<Name>`` / text of texts_*.xml) are collected.
           2. Add each GUID with its file location(s) to the active database
              and store its comment, if one was found. A found comment
              overwrites the stored one (the mod is the current source);
              GUIDs without a comment in the mod keep their stored comment.
+             Comment priority:
+               1. "GUID - comment" line          -> always written
+               2. asset <Name>                   -> only if no comment is stored
+               3. text from texts_*.xml          -> only if no comment is stored
           3. Save the database, refresh the table and show a summary:
              scanned XML files, NEW GUIDs, and for the comments: found /
              new or changed / unchanged / skipped (GUID not registered,
@@ -441,7 +446,7 @@ class DatabaseTab:
         tr = self.app.tr
 
         try:
-            guid_files, comments, xml_count = scan_mod(path, self.app.game.is_own_guid)
+            guid_files, comments, names, xml_count = scan_mod(path, self.app.game.is_own_guid)
         except Exception as e:  # e.g. corrupt ZIP archive
             messagebox.showerror(tr("msg_err_zip"), str(e))
             return
@@ -462,12 +467,21 @@ class DatabaseTab:
             else:
                 unchanged += 1
 
+        # Fallback names: only for registered GUIDs WITHOUT a "GUID - comment"
+        # line in this mod, and only if the database has no comment yet.
+        names_set = 0
+        for guid, name in names.items():
+            if guid in comments:
+                continue
+            if self.app.db.set_comment_if_empty(guid, name):
+                names_set += 1
+
         self.app.db.save()
         self.refresh_view()
         messagebox.showinfo(
             tr("msg_import_title"),
             tr("msg_import_body").format(
                 self.app.game.name, xml_count, new_count,
-                len(comments), changed, unchanged, skipped,
+                len(comments), changed, unchanged, skipped, names_set,
             ),
         )
