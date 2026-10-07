@@ -9,10 +9,11 @@ holding that game's GUID ranges. Every game can have SEVERAL own ranges and
 SEVERAL dummy ranges, stored as comma-separated "start-end" pairs::
 
     [SETTINGS]
-    appearance_mode = System        ; "System", "Light" or "Dark"
-    color_theme = blue              ; "blue", "green", "dark-blue"
-    language = de                   ; "de" or "en"
+    appearance_mode = Dark          ; "System", "Light" or "Dark"
+    color_theme = dark-blue         ; "blue", "green", "dark-blue"
+    language = en                   ; "de" or "en"
     auto_assign = false             ; "Automatic" checkbox in the Replace tab
+    comment_language = english      ; texts_<language>.xml used for names
     active_game = anno1800          ; game selected in the game selector
 
     [ANNO1800]
@@ -42,6 +43,7 @@ import re
 
 from core.constants import (
     CONFIG_FILE,
+    DEFAULT_COMMENT_LANGUAGE,
     DEFAULT_DUMMY_RANGE_END,
     DEFAULT_DUMMY_RANGE_START,
     DEFAULT_GAME,
@@ -237,10 +239,12 @@ class AppConfig:
         self._parser = configparser.ConfigParser()
 
         # General defaults – overwritten by load() if the INI contains values.
-        self.appearance_mode = "System"
-        self.color_theme = "blue"
-        self.language = "de"
+        self.appearance_mode = "Dark"
+        self.color_theme = "dark-blue"
+        self.language = "en"
         self.auto_assign = False
+        #: texts_<language>.xml used for names ("Language Comment"), lower case
+        self.comment_language = DEFAULT_COMMENT_LANGUAGE
         self.active_game = DEFAULT_GAME
         self.games = {key: GameProfile(key) for key in GAMES}
 
@@ -273,6 +277,10 @@ class AppConfig:
         self.color_theme = s.get("color_theme", self.color_theme)
         self.language = s.get("language", self.language)
         self.auto_assign = s.get("auto_assign", "false").lower() == "true"
+        self.comment_language = (
+            s.get("comment_language", DEFAULT_COMMENT_LANGUAGE).strip().lower()
+            or DEFAULT_COMMENT_LANGUAGE
+        )
 
         active = s.get("active_game", DEFAULT_GAME)
         self.active_game = active if active in GAMES else DEFAULT_GAME
@@ -300,6 +308,7 @@ class AppConfig:
         s["color_theme"] = self.color_theme
         s["language"] = self.language
         s["auto_assign"] = str(bool(self.auto_assign)).lower()
+        s["comment_language"] = self.comment_language
         s["active_game"] = self.active_game
 
         for profile in self.games.values():

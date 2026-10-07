@@ -173,9 +173,10 @@ TEXT_TEXT_FIRST_PATTERN = re.compile(
     re.IGNORECASE,
 )
 
-#: Language file that is preferred when the same GUID has a text in several
-#: texts_*.xml files (e.g. texts_english.xml and texts_german.xml).
-PREFERRED_TEXT_LANGUAGE = "english"
+#: Language of the texts_*.xml file that names are read from by default
+#: ("Language Comment" in Settings -> General). Also the fallback language
+#: if the configured language file does not exist or lacks a GUID.
+DEFAULT_COMMENT_LANGUAGE = "english"
 
 #: Matches localisation file names such as "texts_german.xml".
 #: All language variants are grouped as "texts_*.xml" in the database.

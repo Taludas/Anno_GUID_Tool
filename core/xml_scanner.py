@@ -23,7 +23,7 @@ from core.constants import (
     COMMENT_LINE_PATTERN,
     GUID_TAG_PATTERN,
     NUMBER_PATTERN,
-    PREFERRED_TEXT_LANGUAGE,
+    DEFAULT_COMMENT_LANGUAGE,
     STANDARD_BLOCK_PATTERN,
     STANDARD_GUID_PATTERN,
     STANDARD_NAME_PATTERN,
@@ -131,10 +131,26 @@ def extract_text_names(content):
     return names
 
 
-def _text_file_rank(rel_path):
-    """Sort key for texts_*.xml files: preferred language first, then by path."""
-    name = os.path.basename(rel_path).lower()
-    return (0 if PREFERRED_TEXT_LANGUAGE in name else 1, rel_path.lower())
+def text_file_language(rel_path):
+    """Language part of a texts file name: "…/texts_german.xml" -> "german"."""
+    name = os.path.basename(rel_path.replace("\\", "/")).lower()
+    return name[len("texts_"):-len(".xml")]
+
+
+def _text_file_rank(rel_path, language):
+    """Sort key for texts_*.xml files.
+
+    Order: 0 = configured language, 1 = English (fallback), 2 = all others.
+    Files of the same rank are sorted by path so the result is stable.
+    """
+    file_lang = text_file_language(rel_path)
+    if file_lang == language:
+        rank = 0
+    elif file_lang == DEFAULT_COMMENT_LANGUAGE:
+        rank = 1
+    else:
+        rank = 2
+    return (rank, rel_path.lower())
 
 
 def normalize_file_path(raw_path):
@@ -186,11 +202,14 @@ def iter_xml_files(path):
                 yield os.path.relpath(full_path, path), content
 
 
-def scan_mod(path, predicate):
+def scan_mod(path, predicate, language=DEFAULT_COMMENT_LANGUAGE):
     """Scan all XML files once and collect GUIDs, their files, comments and names.
 
     :param path:      mod folder or ZIP archive
     :param predicate: callable ``(guid_str) -> bool`` deciding which GUIDs to keep
+    :param language:  language of the texts_*.xml file to read names from,
+                      e.g. "german" -> texts_german.xml ("Language Comment"
+                      setting). Fallback: texts_english.xml, then any other.
     :returns: tuple ``(guid_files, comments, names, xml_count)``
 
               * ``guid_files``: ``{guid: {normalised file paths}}`` for every
@@ -203,8 +222,9 @@ def scan_mod(path, predicate):
               * ``names``: ``{guid: name}`` fallback names, used when a GUID
                 has no comment. Priority:
                   1. ``<Name>`` of the asset (``<Standard>`` block, any XML)
-                  2. ``<Text>`` of the entry in a texts_*.xml file; if several
-                     languages exist, texts_english.xml is preferred
+                  2. ``<Text>`` of the entry in a texts_*.xml file, searched
+                     per GUID in this order: texts_<language>.xml ->
+                     texts_english.xml -> any other language file
               * ``xml_count``: number of XML files scanned
     """
     guid_files = {}
@@ -227,10 +247,14 @@ def scan_mod(path, predicate):
             for guid, name in extract_asset_names(content).items():
                 asset_names.setdefault(guid, name)
 
-    # Build the fallback names: asset <Name> first, then texts (preferred
-    # language first). Only GUIDs that were actually collected are kept.
+    # Build the fallback names: asset <Name> first, then texts in language
+    # order (configured -> English -> others). setdefault keeps the first
+    # hit, so a GUID missing in texts_<language>.xml falls back to English.
+    # Only GUIDs that were actually collected are kept.
+    language = (language or DEFAULT_COMMENT_LANGUAGE).strip().lower()
     names = {g: n for g, n in asset_names.items() if g in guid_files}
-    for _, file_names in sorted(text_names_per_file, key=lambda item: _text_file_rank(item[0])):
+    for _, file_names in sorted(text_names_per_file,
+                                key=lambda item: _text_file_rank(item[0], language)):
         for guid, text in file_names.items():
             if guid in guid_files:
                 names.setdefault(guid, text)

@@ -446,7 +446,9 @@ class DatabaseTab:
         tr = self.app.tr
 
         try:
-            guid_files, comments, names, xml_count = scan_mod(path, self.app.game.is_own_guid)
+            guid_files, comments, names, xml_count = scan_mod(
+                path, self.app.game.is_own_guid, self.app.settings.comment_language,
+            )
         except Exception as e:  # e.g. corrupt ZIP archive
             messagebox.showerror(tr("msg_err_zip"), str(e))
             return

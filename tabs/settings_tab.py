@@ -7,7 +7,10 @@ Tab "Settings" – user preferences that are persisted in ``config.ini``.
 The tab contains its own sub tab view with one sub tab per group:
 
 * **General**   – appearance mode (applied immediately), color theme
-                  (needs an app restart) and UI language (applied immediately)
+                  (needs an app restart), UI language (applied immediately)
+                  and "Language Comment": language of the texts_*.xml file
+                  names are read from (e.g. "german" -> texts_german.xml;
+                  saved with Enter or when the field loses focus)
 * **Anno 117**  – GUID ranges of Anno 117
 * **Anno 1800** – GUID ranges of Anno 1800
 
@@ -36,6 +39,7 @@ from tkinter import messagebox
 import customtkinter as ctk
 
 from core.config_manager import find_overlap, format_ranges
+from core.constants import DEFAULT_COMMENT_LANGUAGE
 
 #: Sub tab key of the general settings (game sub tabs use the game name).
 SUBTAB_GENERAL = "settings_general"
@@ -192,6 +196,16 @@ class SettingsTab:
         self.combo_lang.set("Deutsch" if cfg.language == "de" else "English")
         self.combo_lang.grid(row=2, column=1, padx=20, pady=10, sticky="w")
 
+        # Row 3: language of the texts_*.xml file used for names
+        self.lbl_comment_lang = ctk.CTkLabel(frame, text="", font=bold)
+        self.lbl_comment_lang.grid(row=3, column=0, padx=20, pady=10, sticky="w")
+        self.entry_comment_lang = ctk.CTkEntry(frame, width=140)
+        self.entry_comment_lang.insert(0, cfg.comment_language)
+        self.entry_comment_lang.grid(row=3, column=1, padx=20, pady=10, sticky="w")
+        # Saved without a button: Enter or leaving the field.
+        self.entry_comment_lang.bind("<Return>", lambda e: self.save_comment_language())
+        self.entry_comment_lang.bind("<FocusOut>", lambda e: self.save_comment_language())
+
     def _build_game(self, parent, game_key):
         """Sub tab of one game: own range list, dummy range list, save button.
 
@@ -234,6 +248,7 @@ class SettingsTab:
         self.lbl_mode.configure(text=tr("settings_appearance"))
         self.lbl_theme.configure(text=tr("settings_theme"))
         self.lbl_lang.configure(text=tr("settings_language"))
+        self.lbl_comment_lang.configure(text=tr("settings_comment_language"))
 
         for widgets in self.game_widgets.values():
             widgets["own"].set_texts(tr("settings_own_ranges"), tr("lbl_range_start"), tr("lbl_range_end"))
@@ -259,6 +274,20 @@ class SettingsTab:
     def change_language(self, choice):
         """Switch the UI language ("Deutsch" -> "de", otherwise "en")."""
         self.app.set_language("de" if choice == "Deutsch" else "en")
+
+    def save_comment_language(self):
+        """Store the "Language Comment" field (trimmed, lower case).
+
+        An empty field falls back to English. The normalised value is written
+        back into the field; config.ini is only written if the value changed.
+        Takes effect with the next registration of a mod.
+        """
+        value = self.entry_comment_lang.get().strip().lower() or DEFAULT_COMMENT_LANGUAGE
+        self.entry_comment_lang.delete(0, "end")
+        self.entry_comment_lang.insert(0, value)
+        if value != self.app.settings.comment_language:
+            self.app.settings.comment_language = value
+            self.app.settings.save()
 
     # ==================================================================
     # GUID ranges

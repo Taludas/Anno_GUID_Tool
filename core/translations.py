@@ -90,7 +90,8 @@ TRANSLATIONS = {
         "msg_err_range_internal_overlap": "{}: Die Ranges {} und {} überschneiden sich!",
         "update_title": "Update verfügbar",
         "update_heading": "Eine neue Version ist verfügbar!",
-        "update_body": "Installierte Version: {}\nNeue Version auf GitHub: {}\n\nDownload:"
+        "update_body": "Installierte Version: {}\nNeue Version auf GitHub: {}\n\nDownload:",
+        "settings_comment_language": "Sprache Kommentare:"
     },
     "en": {
         "tab_db": "GUID Database",
@@ -163,6 +164,7 @@ TRANSLATIONS = {
         "msg_err_range_internal_overlap": "{}: The ranges {} and {} overlap!",
         "update_title": "Update Available",
         "update_heading": "A new version is available!",
-        "update_body": "Installed version: {}\nNew version on GitHub: {}\n\nDownload:"
+        "update_body": "Installed version: {}\nNew version on GitHub: {}\n\nDownload:",
+        "settings_comment_language": "Language Comment:"
     }
 }

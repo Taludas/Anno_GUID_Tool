@@ -111,7 +111,9 @@ used instead:
 1. `<Name>` from the asset's `<Standard>` block (Anno 117 and Anno 1800)
 2. `<Text>` of the entry in a `texts_*.xml` file. Both layouts are supported:
    text before `<LineId>` (Anno 117) and `<GUID>` before text (Anno 1800).
-   `texts_english.xml` is preferred if several languages exist.
+   The language file is set in **Settings → General → Language Comment**
+   (e.g. `german` → `texts_german.xml`). If that file does not exist or does
+   not contain the GUID, `texts_english.xml` is used, then any other language.
 
 A name is only stored if the GUID has no comment in the database yet, so it
 never overwrites an existing comment.
@@ -146,7 +148,7 @@ What happens:
 
 | Sub tab | Content |
 |---|---|
-| **General** | Appearance mode, color theme (needs a restart), language |
+| **General** | Appearance mode, color theme (needs a restart), language, Language Comment (language file for names, saved with Enter or when leaving the field) |
 | **Anno 117** | Own GUID ranges and dummy GUID ranges for Anno 117 |
 | **Anno 1800** | Own GUID ranges and dummy GUID ranges for Anno 1800 |
 
@@ -177,10 +179,11 @@ Example `config.ini`:
 
 ```ini
 [SETTINGS]
-appearance_mode = System
-color_theme = blue
+appearance_mode = Dark
+color_theme = dark-blue
 language = en
 auto_assign = false
+comment_language = english
 active_game = anno1800
 
 [ANNO1800]
@@ -339,7 +342,10 @@ stattdessen ihr Name verwendet:
 1. `<Name>` aus dem `<Standard>`-Block des Assets (Anno 117 und Anno 1800)
 2. `<Text>` des Eintrags in einer `texts_*.xml`. Beide Aufbauten werden
    erkannt: Text vor `<LineId>` (Anno 117) und `<GUID>` vor Text (Anno 1800).
-   Bei mehreren Sprachen hat `texts_english.xml` Vorrang.
+   Die Sprachdatei legst du unter **Einstellungen → Allgemein → Sprache
+   Kommentare** fest (z. B. `german` → `texts_german.xml`). Fehlt diese Datei
+   oder enthält sie die GUID nicht, wird `texts_english.xml` verwendet, danach
+   jede andere Sprache.
 
 Ein Name wird nur gespeichert, wenn die GUID in der Datenbank noch keinen
 Kommentar hat. Er überschreibt also nie einen vorhandenen Kommentar.
@@ -376,7 +382,7 @@ Was dabei passiert:
 
 | Untertab | Inhalt |
 |---|---|
-| **Allgemein** | Erscheinungsbild, Farbthema (Neustart nötig), Sprache |
+| **Allgemein** | Erscheinungsbild, Farbthema (Neustart nötig), Sprache, Sprache Kommentare (Sprachdatei für Namen, gespeichert mit Enter oder beim Verlassen des Feldes) |
 | **Anno 117** | Eigene GUID Ranges und Dummy GUID Ranges für Anno 117 |
 | **Anno 1800** | Eigene GUID Ranges und Dummy GUID Ranges für Anno 1800 |
 
