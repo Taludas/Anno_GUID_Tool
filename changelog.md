@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.6.1
+
+### Added
+- **Program Icon**: modern application icon (`AnnoGUIDTool.ico` / `icon.png`) for the application window and compiled Executable.
+- **"Replace Dummy GUIDs" Tab Enhancements**:
+  - **Checkable GUID Table**: found GUIDs are displayed in a table with checkboxes (`☑` / `☐`) allowing selective replacement.
+  - **Selection Controls & Counter**: added `Select All` / `Deselect All` buttons, header column toggle, spacebar shortcut, and selection counter.
+  - **Right-Click Context Menu**: right-click on selected rows to select or deselect highlighted GUIDs for replacement.
+  - **Option "Replace all GUIDs not in own ranges"**: new checkbox option (default: false) to target all GUIDs outside own ranges.
+
 ## v0.6.0 (thx to Taludas)
 
 ### Added

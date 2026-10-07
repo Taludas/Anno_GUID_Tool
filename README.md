@@ -163,17 +163,23 @@ Reserved GUIDs, both free and used, are never suggested again, in any list. They
 
 #### Tab "Replace Dummy GUIDs"
 
-1. Open the mod with **Open Folder** or **Open ZIP**, or drag the mod folder / ZIP onto the window while this tab is shown (Windows, one mod at a time). All dummy GUIDs, i.e. GUIDs inside a dummy range, are listed together with their files.
-2. Choose where assignment starts:
+1. Open the mod with **Open Folder** or **Open ZIP**, or drag the mod folder / ZIP onto the window while this tab is shown (Windows, one mod at a time).
+   - By default, all GUIDs inside a dummy range are listed in an interactive table with checkboxes (`☑` / `☐`).
+   - Check **Replace all GUIDs not in own ranges** if you want to find and replace all numeric GUIDs in the mod that lie outside your own ranges instead.
+2. Select which GUIDs to replace:
+   - Click a row's checkbox (`☑` / `☐`) or press `Space` to toggle replacement selection for highlighted rows.
+   - Right-click highlighted rows to choose **Select for replacement** or **Deselect for replacement**.
+   - Use **Select All** / **Deselect All** buttons (or click the **Replace** table heading) to toggle all items.
+3. Choose where assignment starts:
    - **Automatic:** start at the first own GUID and fill all free gaps.
    - **Start GUID:** start at a value you enter.
-3. Click **Assign & Replace Real GUIDs** and confirm the warning.
+4. Click **Assign & Replace Real GUIDs** and confirm the warning.
 
 What happens:
 
-- Dummies are assigned in ascending order to the next free GUID.
+- Selected GUIDs are assigned in ascending order to the next free GUID.
 - If one own range is full, assignment continues in the next range.
-- Every standalone occurrence of a dummy is replaced in all XML files. This includes `<GUID>`, references such as `<Product>`, ModOp attributes and `GUID - text` comments.
+- Every standalone occurrence of a replaced GUID is updated in all XML files. This includes `<GUID>`, references such as `<Product>`, ModOp attributes and `GUID - text` comments.
 - Nothing is changed if there are not enough free GUIDs, or if you cancel.
 - Afterwards, the tool offers to register the mod in the database.
 
@@ -434,17 +440,23 @@ Reservierte GUIDs, freie wie benutzte, werden in keiner Liste erneut vorgeschlag
 
 #### Tab „Dummy-GUIDs Ersetzen“
 
-1. Die Mod mit **Ordner öffnen** oder **ZIP öffnen** laden, oder den Mod-Ordner / die ZIP ins Fenster ziehen, während dieser Tab angezeigt wird (Windows, eine Mod auf einmal). Alle Dummy-GUIDs, also GUIDs innerhalb einer Dummy Range, werden mit ihren Dateien angezeigt.
-2. Festlegen, wo die Vergabe beginnt:
+1. Die Mod mit **Ordner öffnen** oder **ZIP öffnen** laden, oder den Mod-Ordner / die ZIP ins Fenster ziehen, während dieser Tab angezeigt wird (Windows, eine Mod auf einmal).
+   - Standardmäßig werden alle GUIDs innerhalb einer Dummy Range in einer interaktiven Tabelle mit Checkboxen (`☑` / `☐`) aufgelistet.
+   - Aktiviere **Alle GUIDs ersetzen, die nicht in eigenen Ranges liegen**, wenn stattdessen alle numerischen GUIDs der Mod gesucht und ersetzt werden sollen, die außerhalb deiner eigenen Ranges liegen.
+2. Anpassen, welche GUIDs ersetzt werden sollen:
+   - Auf das **`☑` / `☐`** einer Zeile klicken oder die **Leertaste** drücken, um die Auswahl markierter Zeilen umzuschalten.
+   - Rechtsklick auf markierte Zeilen → **Für Ersetzung auswählen** oder **Von Ersetzung abwählen**.
+   - Mit den Buttons **Alle auswählen** / **Keine auswählen** (oder Klick auf die Tabellenüberschrift **Ersetzen**) alle Zeilen umschalten.
+3. Festlegen, wo die Vergabe beginnt:
    - **Automatisch:** ab der ersten eigenen GUID, freie Lücken werden gefüllt.
    - **Start-GUID:** ab einem selbst eingegebenen Wert.
-3. **Echte GUIDs zuweisen & Ersetzen** klicken und die Warnung bestätigen.
+4. **Echte GUIDs zuweisen & Ersetzen** klicken und die Warnung bestätigen.
 
 Was dabei passiert:
 
-- Die Dummies erhalten in aufsteigender Reihenfolge die jeweils nächste freie GUID.
+- Die ausgewählten GUIDs erhalten in aufsteigender Reihenfolge die jeweils nächste freie GUID.
 - Ist eine eigene Range voll, geht es in der nächsten Range weiter.
-- Jedes alleinstehende Vorkommen eines Dummys wird in allen XML-Dateien ersetzt. Das umfasst `<GUID>`, Verweise wie `<Product>`, ModOp-Attribute und `GUID - Text`-Kommentare.
+- Jedes alleinstehende Vorkommen einer ersetzten GUID wird in allen XML-Dateien aktualisiert. Das umfasst `<GUID>`, Verweise wie `<Product>`, ModOp-Attribute und `GUID - Text`-Kommentare.
 - Reichen die freien GUIDs nicht aus oder brichst du ab, wird nichts verändert.
 - Danach bietet das Tool an, die Mod in der Datenbank zu registrieren.
 

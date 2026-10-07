@@ -245,6 +245,7 @@ class AppConfig:
         self.color_theme = "dark-blue"
         self.language = "en"
         self.auto_assign = False
+        self.replace_non_own = False
         #: "Mark as used when copied" checkbox in the Free GUIDs tab
         self.mark_used_on_copy = True
         #: "Show reserved" checkbox in the GUID Database tab
@@ -283,6 +284,7 @@ class AppConfig:
         self.color_theme = s.get("color_theme", self.color_theme)
         self.language = s.get("language", self.language)
         self.auto_assign = s.get("auto_assign", "false").lower() == "true"
+        self.replace_non_own = s.get("replace_non_own", "false").lower() == "true"
         self.mark_used_on_copy = s.get("mark_used_on_copy", "true").lower() == "true"
         self.show_reserved_in_db = s.get("show_reserved_in_db", "true").lower() == "true"
         self.comment_language = (
@@ -316,6 +318,7 @@ class AppConfig:
         s["color_theme"] = self.color_theme
         s["language"] = self.language
         s["auto_assign"] = str(bool(self.auto_assign)).lower()
+        s["replace_non_own"] = str(bool(self.replace_non_own)).lower()
         s["mark_used_on_copy"] = str(bool(self.mark_used_on_copy)).lower()
         s["show_reserved_in_db"] = str(bool(self.show_reserved_in_db)).lower()
         s["comment_language"] = self.comment_language

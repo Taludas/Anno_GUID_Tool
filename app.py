@@ -37,6 +37,7 @@ Shortcuts used by the tabs
 ``app.reservations`` -> :class:`GuidReservations` of the active game
 """
 
+import os
 import queue
 import webbrowser
 from tkinter import messagebox
