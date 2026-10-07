@@ -62,17 +62,21 @@ CONFIG_FILE = "config.ini"
 #: name       = display name in the UI
 #: db_file    = JSON database file of this game
 #:              Format: { "<guid>": ["relative/path/assets.xml", ...], ... }
+#: reserve_file = JSON file with the GUIDs reserved in the tab "Free GUIDs"
+#:              Format: { "<guid>": {"used": true|false}, ... }
 #: section    = INI section in config.ini holding this game's GUID ranges
 #: The dict order defines the order of the game selector buttons.
 GAMES = {
     "anno117": {
         "name": "Anno 117",
         "db_file": "guid_database_anno117.json",
+        "reserve_file": "guid_reservations_anno117.json",
         "section": "ANNO117",
     },
     "anno1800": {
         "name": "Anno 1800",
         "db_file": "guid_database_anno1800.json",
+        "reserve_file": "guid_reservations_anno1800.json",
         "section": "ANNO1800",
     },
 }

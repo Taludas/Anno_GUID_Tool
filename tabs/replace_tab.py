@@ -13,7 +13,8 @@ GUID and re-scans the loaded mod with the new game's dummy ranges.
 
 Workflow
 --------
-1. The user opens a mod folder or ZIP ("Open Folder" / "Open ZIP").
+1. The user opens a mod folder or ZIP ("Open Folder" / "Open ZIP"), or
+   drags it onto the window while this tab is shown (Windows).
 2. The mod is scanned immediately; every GUID defined in a ``<GUID>`` or
    ``<LineId>`` tag that lies inside one of the DUMMY GUID ranges (Settings) is
    listed in the log together with the file(s) it is defined in.
@@ -25,7 +26,8 @@ Workflow
      c. asks for a final confirmation (OK / Cancel), because the files are
         overwritten directly and the operation cannot be undone,
      d. maps every dummy (sorted ascending) to the next free real GUID
-        (GUIDs already in the database are skipped; when an own range is
+        (GUIDs already in the database or reserved in the "Free GUIDs"
+        tab are skipped; when an own range is
         full, assignment continues at the start of the next own range),
      e. replaces every standalone occurrence of each dummy in all XML
         files – definitions AND references,
@@ -52,6 +54,8 @@ class ReplaceTab:
         self.parent = parent
         #: Currently loaded mod (folder path or ZIP file path), or None.
         self.working_path = None
+        #: True once the app has activated drag & drop (changes the "no path" hint).
+        self.drop_enabled = False
         self._build_ui()
 
     # ==================================================================
@@ -123,7 +127,7 @@ class ReplaceTab:
         self.btn_select_folder.configure(text=tr("btn_load_folder"))
         self.btn_select_zip.configure(text=tr("btn_load_zip"))
         if not self.working_path:
-            self.lbl_mod_path.configure(text=tr("no_path"))
+            self.lbl_mod_path.configure(text=tr("no_path_drop" if self.drop_enabled else "no_path"))
         self.lbl_dummy_range.configure(text=tr("lbl_dummy_range"))
         self.lbl_start.configure(text=tr("lbl_start_guid"))
         self.chk_automatic.configure(text=tr("chk_automatic"))
@@ -212,6 +216,23 @@ class ReplaceTab:
     # ==================================================================
     # Load / Scan
     # ==================================================================
+    def enable_drop_hint(self):
+        """Mention drag & drop in the "no path loaded" label (called by the app)."""
+        self.drop_enabled = True
+        self.update_language()
+
+    def handle_drop(self, mods):
+        """Load a mod folder / ZIP dropped onto the window while this tab is shown.
+
+        Only ONE mod can be loaded. If several were dropped, nothing is loaded,
+        so the replacement can never run on a mod the user did not intend.
+        """
+        if len(mods) > 1:
+            tr = self.app.tr
+            messagebox.showwarning(tr("msg_drop_one_title"), tr("msg_drop_one_body").format(len(mods)))
+            return
+        self._set_working_path(mods[0])
+
     def load_folder(self):
         """Let the user pick a mod folder and scan it."""
         path = filedialog.askdirectory(title="Select mod folder")
@@ -310,8 +331,10 @@ class ReplaceTab:
             return
 
         # --- Step 3: make sure the own ranges have enough free GUIDs ---
-        # Counted over ALL own ranges, from the start GUID upwards.
-        free_count = db.count_free(cfg.own_ranges, start_guid)
+        # Counted over ALL own ranges, from the start GUID upwards. GUIDs
+        # reserved in the "Free GUIDs" tab count as used.
+        reserved = self.app.reservations.taken()
+        free_count = db.count_free(cfg.own_ranges, start_guid, reserved)
         if free_count < len(dummy_files):
             messagebox.showerror(
                 "Error",
@@ -334,12 +357,12 @@ class ReplaceTab:
         # --- Step 5: map dummies (ascending) to free real GUIDs -------
         sorted_dummies = sorted(dummy_files, key=int)
         # Continues automatically in the next own range when one is full.
-        real_guids = db.allocate(len(sorted_dummies), cfg.own_ranges, start_guid)
+        real_guids = db.allocate(len(sorted_dummies), cfg.own_ranges, start_guid, reserved)
         dummy_map = dict(zip(sorted_dummies, real_guids))
 
         # --- Step 6: rewrite all XML files -----------------------------
         try:
-            rewrite_xml_files(self.working_path, lambda text: apply_dummy_map(text, dummy_map))
+            rewrite_xml_files(self.working_path, lambda text, _location: apply_dummy_map(text, dummy_map))
         except Exception as e:
             messagebox.showerror("Error", str(e))
             return

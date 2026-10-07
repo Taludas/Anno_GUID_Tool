@@ -30,10 +30,11 @@ ICON_FILE = ROOT / "AnnoGUIDTool.ico"
 #: Project modules. They are imported via main.py -> app.py and found by the
 #: import scanner, but are listed explicitly to be safe.
 HIDDEN_IMPORTS = (
-    "core.config_manager", "core.constants", "core.guid_database",
+    "core.collisions", "core.config_manager", "core.constants", "core.file_drop", "core.guid_database",
+    "core.guid_reservations",
     "core.translations", "core.update_checker", "core.version", "core.xml_scanner",
-    "dialogs.update_dialog",
-    "tabs.database_tab", "tabs.replace_tab", "tabs.settings_tab",
+    "dialogs.collision_dialog", "dialogs.collision_report", "dialogs.migrate_dialog", "dialogs.update_dialog",
+    "tabs.database_tab", "tabs.reserve_tab", "tabs.replace_tab", "tabs.settings_tab",
 )
 
 #: Unused GUI bindings that may be installed in the build environment and

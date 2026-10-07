@@ -39,6 +39,17 @@ def is_zip_path(path):
     return os.path.isfile(path) and path.lower().endswith(".zip")
 
 
+def split_mod_paths(paths):
+    """Split paths (e.g. dropped onto the window) into mods and other files.
+
+    :return: ``(mods, rejected)`` – ``mods`` = folders and ``.zip`` files
+             (full paths), ``rejected`` = file names of everything else
+    """
+    mods = [p for p in paths if os.path.isdir(p) or is_zip_path(p)]
+    rejected = [os.path.basename(p) or p for p in paths if p not in mods]
+    return mods, rejected
+
+
 def extract_guids_from_text(content):
     """Return the set of all GUID / LineId values *defined* in an XML text.
 
@@ -105,6 +116,31 @@ def extract_asset_names(content):
             if text:
                 names.setdefault(guid.group(1), text)
     return names
+
+
+def extract_asset_guids(content):
+    """Return the GUIDs of all asset definitions (``<Standard>`` blocks), in order.
+
+    A GUID is listed once per block, so a GUID that is defined twice in the
+    text appears twice. XML comments are removed first (a commented-out old
+    copy of an asset is not a definition).
+    """
+    content = XML_COMMENT_PATTERN.sub("", content)
+    result = []
+    for block in STANDARD_BLOCK_PATTERN.findall(content):
+        guid = STANDARD_GUID_PATTERN.search(block)
+        if guid:
+            result.append(guid.group(1))
+    return result
+
+
+def extract_text_ids(content):
+    """Return every ``<GUID>`` / ``<LineId>`` value of a texts_*.xml file, in order.
+
+    An ID that has two text entries in the file appears twice. XML comments
+    are removed first.
+    """
+    return GUID_TAG_PATTERN.findall(XML_COMMENT_PATTERN.sub("", content))
 
 
 def extract_text_names(content):
@@ -192,6 +228,47 @@ def mod_folder_prefix(path):
     return os.path.basename(os.path.normpath(path))
 
 
+def location_resolver(path):
+    """Return a function ``rel_path -> location`` for the files of the mod at ``path``.
+
+    The location is what the database stores, e.g.
+    ``[ModName]/data/base/config/export/assets.xml``:
+
+    * Folder: the selected folder name is put in front (see
+      :func:`mod_folder_prefix`), then the path is normalised.
+    * ZIP: the entry name is used. If the archive has no mod folder above
+      ``data/`` (``data/base/...`` directly in the ZIP), the ZIP file name
+      without ``.zip`` is used as mod folder, so every location still names
+      its mod.
+    """
+    prefix = mod_folder_prefix(path)   # "" for ZIP archives
+    zip_stem = os.path.splitext(os.path.basename(path))[0] if is_zip_path(path) else ""
+
+    def resolve(rel_path):
+        location = normalize_file_path(os.path.join(prefix, rel_path) if prefix else rel_path)
+        if zip_stem and location.split("/")[0] == "data":
+            location = normalize_file_path(f"{zip_stem}/{rel_path}")
+        return location
+
+    return resolve
+
+
+def mod_of_location(location):
+    """Name of the mod a stored location belongs to, or "" if unknown.
+
+    The mod is the folder directly above ``data/``:
+    ``[Specialists] v2/data/base/assets.xml`` -> ``"[Specialists] v2"``.
+    Locations without such a folder (e.g. from very old tool versions:
+    ``data/base/assets.xml``) return "".
+    """
+    parts = location.split("/")
+    if "data" in parts:
+        index = parts.index("data")
+        if index > 0:
+            return parts[index - 1]
+    return ""
+
+
 def iter_xml_files(path):
     """Yield ``(relative_path, content)`` for every XML file of a mod.
 
@@ -234,7 +311,7 @@ def scan_mod(path, predicate, language=DEFAULT_COMMENT_LANGUAGE):
     :param language:  language of the texts_*.xml file to read names from,
                       e.g. "german" -> texts_german.xml ("Language Comment"
                       setting). Fallback: texts_english.xml, then any other.
-    :returns: tuple ``(guid_files, comments, names, xml_count)``
+    :returns: tuple ``(guid_files, comments, names, xml_count, duplicates)``
 
               * ``guid_files``: ``{guid: {normalised file paths}}`` for every
                 GUID defined in a <GUID>/<LineId> tag that passes ``predicate``.
@@ -250,17 +327,34 @@ def scan_mod(path, predicate, language=DEFAULT_COMMENT_LANGUAGE):
                      per GUID in this order: texts_<language>.xml ->
                      texts_english.xml -> any other language file
               * ``xml_count``: number of XML files scanned
+              * ``duplicates``: ``{guid: {mod: [file, file, ...]}}`` for GUIDs
+                that ONE mod defines more than once: in two asset
+                definitions (``<Standard>`` blocks, same or different files)
+                or twice in the same texts_*.xml file. The file list has
+                one entry per definition. An asset plus its own text entry
+                (same GUID, the normal Anno way) is NOT a duplicate. Only
+                GUIDs that pass ``predicate``.
     """
-    prefix = mod_folder_prefix(path)   # "" for ZIP archives
+    resolve = location_resolver(path)
     guid_files = {}
     all_comments = {}
     asset_names = {}
     text_names_per_file = []   # [(rel_path, {guid: text}), ...]
+    definitions = {}           # (mod, guid, "asset" | file) -> [files]
     xml_count = 0
     for rel_path, content in iter_xml_files(path):
         xml_count += 1
-        full_rel = os.path.join(prefix, rel_path) if prefix else rel_path
-        norm_path = normalize_file_path(full_rel)
+        norm_path = resolve(rel_path)
+        mod = mod_of_location(norm_path)
+        # Real file name for messages (the location shows texts_*.xml).
+        shown_path = norm_path.rsplit("/", 1)[0] + "/" + os.path.basename(rel_path.replace("\\", "/"))
+        if is_texts_file(rel_path):   # duplicates count per language file
+            ids, kind = extract_text_ids(content), shown_path
+        else:                         # duplicates count across all asset files
+            ids, kind = extract_asset_guids(content), "asset"
+        for guid in ids:
+            if predicate(guid):
+                definitions.setdefault((mod, guid, kind), []).append(shown_path)
         for guid in extract_guids_from_text(content):
             if predicate(guid):
                 guid_files.setdefault(guid, set()).add(norm_path)
@@ -285,7 +379,12 @@ def scan_mod(path, predicate, language=DEFAULT_COMMENT_LANGUAGE):
             if guid in guid_files:
                 names.setdefault(guid, text)
 
-    return guid_files, all_comments, names, xml_count
+    duplicates = {}
+    for (mod, guid, _), files in definitions.items():
+        if len(files) > 1:
+            duplicates.setdefault(guid, {}).setdefault(mod, []).extend(files)
+
+    return guid_files, all_comments, names, xml_count, duplicates
 
 
 def collect_guids(path, predicate):
@@ -298,7 +397,7 @@ def collect_guids(path, predicate):
               matching GUID to a set of normalised file paths it was found in,
               and ``xml_count`` is the number of XML files scanned.
     """
-    guid_files, _, _, xml_count = scan_mod(path, predicate)
+    guid_files, _, _, xml_count, _ = scan_mod(path, predicate)
     return guid_files, xml_count
 
 
@@ -314,7 +413,11 @@ def apply_dummy_map(content, dummy_map):
 
 
 def rewrite_xml_files(path, transform):
-    """Apply ``transform(content) -> new_content`` to every XML file of a mod.
+    """Apply ``transform(content, location) -> new_content`` to every XML file of a mod.
+
+    ``location`` is the file's database location (see :func:`location_resolver`),
+    so a transform can treat the files of different mods differently (used
+    when one GUID is migrated in only one of several mods).
 
     * Folder: each file is rewritten in place, but only if its content
       actually changed (keeps file timestamps of untouched files).
@@ -323,6 +426,7 @@ def rewrite_xml_files(path, transform):
       ZipInfo), then it replaces the original archive. The temp directory is
       always removed, even on errors.
     """
+    resolve = location_resolver(path)
     if is_zip_path(path):
         temp_dir = tempfile.mkdtemp()
         try:
@@ -332,7 +436,7 @@ def rewrite_xml_files(path, transform):
                     data = zin.read(item.filename)
                     if item.filename.lower().endswith(".xml"):
                         text = data.decode("utf-8", errors="ignore")
-                        data = transform(text).encode("utf-8")
+                        data = transform(text, resolve(item.filename)).encode("utf-8")
                     zout.writestr(item, data)
             shutil.move(temp_zip, path)
         finally:
@@ -346,7 +450,7 @@ def rewrite_xml_files(path, transform):
             full_path = os.path.join(root, name)
             with open(full_path, "r", encoding="utf-8", errors="ignore") as f:
                 content = f.read()
-            new_content = transform(content)
+            new_content = transform(content, resolve(os.path.relpath(full_path, path)))
             if new_content != content:
                 with open(full_path, "w", encoding="utf-8") as f:
                     f.write(new_content)

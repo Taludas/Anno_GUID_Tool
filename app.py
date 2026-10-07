@@ -13,10 +13,16 @@ Responsibilities
 * Show a game selector above the tabs. The selected game decides
     - which database the "GUID Database" tab shows / imports into,
     - which own / dummy GUID range the "Replace Dummy GUIDs" tab uses.
-* Create the tab view and the three tabs (order = display order):
+* Load the GUIDs reserved in the "Free GUIDs" tab (:class:`GuidReservations`),
+  also one file per game.
+* Create the tab view and the four tabs (order = display order):
     1. "GUID Database"       -> :class:`DatabaseTab`
-    2. "Replace Dummy GUIDs" -> :class:`ReplaceTab`
-    3. "Settings"            -> :class:`SettingsTab`
+    2. "Free GUIDs"          -> :class:`ReserveTab`
+    3. "Replace Dummy GUIDs" -> :class:`ReplaceTab`
+    4. "Settings"            -> :class:`SettingsTab`
+* Accept mod folders / ZIPs dragged onto the window (Windows only)
+  (:meth:`_poll_dropped_files`): on the "Replace Dummy GUIDs" tab the mod is
+  loaded there, on every other tab it is registered in the active database.
 * Provide translation (:meth:`tr`) and live language switching.
 * Check GitHub for a newer version at startup (background thread) and
   show :class:`UpdateDialog` if one is available.
@@ -28,6 +34,7 @@ Shortcuts used by the tabs
 --------------------------
 ``app.game`` -> :class:`GameProfile` of the active game (GUID ranges)
 ``app.db``   -> :class:`GuidDatabase` of the active game
+``app.reservations`` -> :class:`GuidReservations` of the active game
 """
 
 import queue
@@ -38,20 +45,28 @@ import customtkinter as ctk
 
 from core.config_manager import AppConfig
 from core.constants import APP_AUTHOR, APP_NAME, GAMES
+from core.file_drop import enable_file_drop
 from core.guid_database import GuidDatabase, migrate_legacy_database
+from core.guid_reservations import GuidReservations
 from core.translations import TRANSLATIONS
+from core.xml_scanner import split_mod_paths
 from core.update_checker import GITHUB_REPO_URL, KOFI_URL, check_for_update_async
 from core.version import read_version
 from tabs.database_tab import DatabaseTab
 from tabs.replace_tab import ReplaceTab
+from tabs.reserve_tab import ReserveTab
 from dialogs.update_dialog import UpdateDialog
 from tabs.settings_tab import SettingsTab
 
 # Internal tab identifiers. CTkTabview uses the tab *name* as key, so fixed
 # keys are used and only the visible button text is translated later.
 TAB_KEY_DB = "tab_db"
+TAB_KEY_RESERVE = "tab_reserve"
 TAB_KEY_ASSIGN = "tab_assign"
 TAB_KEY_SETTINGS = "tab_settings"
+
+#: How often (ms) the UI thread checks for files dropped onto the window.
+DROP_POLL_MS = 150
 
 
 class GUIDManagerApp(ctk.CTk):
@@ -74,6 +89,9 @@ class GUIDManagerApp(ctk.CTk):
 
         #: dict game key -> GuidDatabase (one JSON file per game)
         self.databases = {key: GuidDatabase(info["db_file"]) for key, info in GAMES.items()}
+
+        #: dict game key -> GuidReservations ("Free GUIDs" tab, one JSON file per game)
+        self.all_reservations = {key: GuidReservations(info["reserve_file"]) for key, info in GAMES.items()}
 
         # Theme must be applied BEFORE widgets are created.
         ctk.set_appearance_mode(self.settings.appearance_mode)
@@ -116,14 +134,16 @@ class GUIDManagerApp(ctk.CTk):
         self.btn_kofi.pack(side="right", padx=(0, 8))
 
         # --- Tab view -------------------------------------------------
-        self.tabview = ctk.CTkTabview(self)
+        self.tabview = ctk.CTkTabview(self, command=self._on_tab_changed)
         self.tabview.pack(padx=20, pady=(10, 20), fill="both", expand=True)
 
         frame_db = self.tabview.add(TAB_KEY_DB)
+        frame_reserve = self.tabview.add(TAB_KEY_RESERVE)
         frame_assign = self.tabview.add(TAB_KEY_ASSIGN)
         frame_settings = self.tabview.add(TAB_KEY_SETTINGS)
 
         self.database_tab = DatabaseTab(self, frame_db)
+        self.reserve_tab = ReserveTab(self, frame_reserve)
         self.replace_tab = ReplaceTab(self, frame_assign)
         self.settings_tab = SettingsTab(self, frame_settings)
 
@@ -139,8 +159,81 @@ class GUIDManagerApp(ctk.CTk):
                 self.tr("msg_migrated_body").format(GAMES["anno1800"]["db_file"]),
             ))
 
+        # Drag & drop of mod folders / ZIPs onto the window.
+        self._enable_file_drop()
+
         # Look for a newer version on GitHub (non-blocking).
         self._start_update_check()
+
+    # ------------------------------------------------------------------
+    # Drag & drop
+    # ------------------------------------------------------------------
+    def _enable_file_drop(self):
+        """Register the window as drop target and show the hint if it worked.
+
+        The native handle of the top-level window (``wm_frame``) only exists
+        after the window has been created, hence ``update_idletasks`` first.
+        """
+        #: dropped path lists, filled by the window procedure (see core/file_drop.py
+        #: why it must not call Tkinter itself) and emptied by _poll_dropped_files().
+        self._drop_queue = queue.Queue()
+        self._drop_busy = False
+        try:
+            self.update_idletasks()
+            hwnd = int(self.wm_frame(), 16)
+            enabled = enable_file_drop(hwnd, self._drop_queue.put)
+        except Exception as e:
+            print(f"Drag & drop not available: {e}")
+            enabled = False
+        if enabled:
+            self.database_tab.enable_drop_hint()
+            self.replace_tab.enable_drop_hint()
+            self.after(DROP_POLL_MS, self._poll_dropped_files)
+
+    def _poll_dropped_files(self):
+        """Register dropped mods in the UI thread; re-schedules itself.
+
+        While an import (or its summary dialog, which runs a nested event
+        loop) is still open, new drops stay in the queue until it is done.
+        """
+        if not self._drop_busy:
+            try:
+                paths = self._drop_queue.get_nowait()
+            except queue.Empty:
+                paths = None
+            if paths:
+                self._drop_busy = True
+                try:
+                    self._handle_drop(paths)
+                finally:
+                    self._drop_busy = False
+        self.after(DROP_POLL_MS, self._poll_dropped_files)
+
+    def _handle_drop(self, paths):
+        """Send dropped mod folders / ZIPs to the tab that fits the shown tab.
+
+        * "Replace Dummy GUIDs" shown -> load the mod there for replacement
+        * "Free GUIDs" shown          -> register, but stay on that tab so the
+                                         reserved GUIDs are seen turning "registered"
+        * any other tab               -> switch to "GUID Database" and register
+
+        Other files are ignored; if no folder / ZIP was dropped at all, a
+        warning lists what was rejected.
+        """
+        mods, rejected = split_mod_paths(paths)
+        if not mods:
+            messagebox.showwarning(self.tr("msg_drop_invalid_title"),
+                                   self.tr("msg_drop_invalid_body").format("\n".join(rejected)))
+            return
+        tab = self.tabview.get()
+        if tab == TAB_KEY_ASSIGN:
+            self.replace_tab.handle_drop(mods)
+        elif tab == TAB_KEY_RESERVE:
+            self.database_tab.register_paths(mods)
+            self.reserve_tab.refresh_view()
+        else:
+            self.tabview.set(TAB_KEY_DB)
+            self.database_tab.register_paths(mods)
 
     # ------------------------------------------------------------------
     # Update check
@@ -181,6 +274,28 @@ class GUIDManagerApp(ctk.CTk):
         """:class:`GuidDatabase` of the active game."""
         return self.databases[self.settings.active_game]
 
+    @property
+    def reservations(self):
+        """:class:`GuidReservations` (reserved GUIDs) of the active game."""
+        return self.all_reservations[self.settings.active_game]
+
+    def show_reserve_tab(self):
+        """Switch to the "Free GUIDs" tab (e.g. from the database's right-click menu)."""
+        self.tabview.set(TAB_KEY_RESERVE)
+        self._on_tab_changed()
+
+    def _on_tab_changed(self):
+        """Refresh the "Free GUIDs" tab whenever it is shown.
+
+        Its "registered" state and comments come from the database, which
+        the other tabs change (import, delete, move, replace). Likewise the
+        database table shows the reserved ranges of the Free GUIDs lists.
+        """
+        if self.tabview.get() == TAB_KEY_RESERVE:
+            self.reserve_tab.refresh_view()
+        elif self.tabview.get() == TAB_KEY_DB:
+            self.database_tab.refresh_view()
+
     def _on_game_selected(self, display_name):
         """Callback of the game selector: switch the active game.
 
@@ -196,6 +311,7 @@ class GUIDManagerApp(ctk.CTk):
 
         self._update_title()
         self.database_tab.refresh_view()
+        self.reserve_tab.refresh_view()
         self.replace_tab.on_game_changed()
 
     def _update_title(self):
@@ -233,12 +349,13 @@ class GUIDManagerApp(ctk.CTk):
         # internal structure changes in a future CustomTkinter version.
         try:
             buttons = self.tabview._segmented_button._buttons_dict
-            for key in (TAB_KEY_DB, TAB_KEY_ASSIGN, TAB_KEY_SETTINGS):
+            for key in (TAB_KEY_DB, TAB_KEY_RESERVE, TAB_KEY_ASSIGN, TAB_KEY_SETTINGS):
                 if key in buttons:
                     buttons[key].configure(text=self.tr(key))
         except Exception as e:
             print(f"Error updating tab captions: {e}")
 
         self.database_tab.update_language()
+        self.reserve_tab.update_language()
         self.replace_tab.update_language()
         self.settings_tab.update_language()
